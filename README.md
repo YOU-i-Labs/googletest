@@ -1,7 +1,13 @@
+## Changes for Hunter ##
+
+This branch of GoogleTest is supposed to be added to client projects with the [hunter package manager](https://github.com/ruslo/hunter).
+In order to implement support for the hunter package manager, changes were made to the CMakeLists files to support the config file based mode
+of ```find_package()```
+
+
 
 # Google Test #
 
-[![Build Status](https://travis-ci.org/google/googletest.svg?branch=master)](https://travis-ci.org/google/googletest)
 
 Welcome to **Google Test**, Google's C++ test framework!
 

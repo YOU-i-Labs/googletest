@@ -44,8 +44,8 @@ endif()
 # as ${gtest_SOURCE_DIR} and to the root binary directory as
 # ${gtest_BINARY_DIR}.
 # Language "C" is required for find_package(Threads).
-project(gtest CXX C)
-cmake_minimum_required(VERSION 2.6.2)
+project(gtest VERSION 1.8.0 LANGUAGES CXX C )
+cmake_minimum_required(VERSION 3.0)
 
 if (COMMAND set_up_hermetic_build)
   set_up_hermetic_build()
@@ -94,18 +94,126 @@ target_link_libraries(gtest_main gtest)
 # If the CMake version supports it, attach header directory information
 # to the targets for when we are part of a parent build (ie being pulled
 # in via add_subdirectory() rather than being a standalone build).
-if (DEFINED CMAKE_VERSION AND NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.11")
-  target_include_directories(gtest      INTERFACE "${gtest_SOURCE_DIR}/include")
-  target_include_directories(gtest_main INTERFACE "${gtest_SOURCE_DIR}/include")
-endif()
+#if (DEFINED CMAKE_VERSION AND NOT "${CMAKE_VERSION}" VERSION_LESS "3.0")
+#  target_include_directories(gtest      INTERFACE "${gtest_SOURCE_DIR}/include")
+#  target_include_directories(gtest_main INTERFACE "${gtest_SOURCE_DIR}/include")
+#endif()
+
+target_include_directories(
+  gtest PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>"
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
+)
+
+target_include_directories(
+  gtest_main PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>"
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
+)
+
+
+############################################################################
+# Properties of targets
+
+# Add definitions for targets
+# Values:
+#   * Debug: -DFOO_BAR_DEBUG=1
+#   * Release: -DFOO_BAR_DEBUG=0
+#   * other: -DFOO_BAR_DEBUG=0
+target_compile_definitions( gtest PUBLIC "GOOGLETEST_GTEST_DEBUG=$<CONFIG:Debug>")
+target_compile_definitions( gtest_main PUBLIC "GOOGLETEST_GTEST_MAIN_DEBUG=$<CONFIG:Debug>")
+
+include(GenerateExportHeader)
+generate_export_header(gtest)
+generate_export_header(gtest_main)
+
 
 ########################################################################
 #
 # Install rules
-install(TARGETS gtest gtest_main
-  DESTINATION lib)
-install(DIRECTORY ${gtest_SOURCE_DIR}/include/gtest
-  DESTINATION include)
+
+set(config_install_dir "lib/cmake/${PROJECT_NAME}")
+set(include_install_dir "include")
+
+set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
+
+
+# Configuration
+set(version_config "${generated_dir}/${PROJECT_NAME}ConfigVersion.cmake")
+set(project_config "${generated_dir}/${PROJECT_NAME}Config.cmake")
+set(targets_export_name "${PROJECT_NAME}Targets")
+set(namespace "${PROJECT_NAME}::")
+
+# Include module with fuction 'write_basic_package_version_file'
+include(CMakePackageConfigHelpers)
+
+# Configure '<PROJECT-NAME>ConfigVersion.cmake'
+# Note: PROJECT_VERSION is used as a VERSION
+write_basic_package_version_file(
+  "${version_config}" COMPATIBILITY SameMajorVersion
+)
+
+# Configure '<PROJECT-NAME>Config.cmake'
+# Use variables:
+#   * targets_export_name
+#   * PROJECT_NAME
+configure_package_config_file(
+  "cmake/Config.cmake.in"
+  "${project_config}"
+  INSTALL_DESTINATION "${config_install_dir}"
+)
+
+# Targets:
+#   * <prefix>/lib/libbar.a
+#   * <prefix>/lib/libbaz.a
+#   * header location after install: <prefix>/include/foo/Bar.hpp
+#   * headers can be included by C++ code `#include <foo/Bar.hpp>`
+install(
+  TARGETS gtest gtest_main
+  EXPORT "${targets_export_name}"
+  LIBRARY DESTINATION "lib"
+  ARCHIVE DESTINATION "lib"
+  RUNTIME DESTINATION "bin"
+  INCLUDES DESTINATION "${include_install_dir}"
+)
+
+message( "------------- targets_export_name: ${targets_export_name}")
+
+# Headers:
+#   * Source/foo/Bar.hpp -> <prefix>/include/foo/Bar.hpp
+#   * Source/foo/Baz.hpp -> <prefix>/include/foo/Baz.hpp
+install(
+  DIRECTORY ${gtest_SOURCE_DIR}/include/gtest
+  DESTINATION "${include_install_dir}"
+  FILES_MATCHING PATTERN "*.h"
+)
+
+# Export headers:
+#   * ${CMAKE_CURRENT_BINARY_DIR}/gtest_export.h -> <prefix>/include/gtest_export.h
+#   * ${CMAKE_CURRENT_BINARY_DIR}/gtest_main_export.h -> <prefix>/include/gtest_main_export.h
+install(
+  FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/gtest_export.h"
+  "${CMAKE_CURRENT_BINARY_DIR}/gtest_main_export.h"
+  DESTINATION "${include_install_dir}"
+)
+
+# Config
+#   * <prefix>/lib/cmake/Foo/FooConfig.cmake
+#   * <prefix>/lib/cmake/Foo/FooConfigVersion.cmake
+install(
+  FILES "${project_config}" "${version_config}"
+  DESTINATION "${config_install_dir}"
+)
+
+# Config
+#   * <prefix>/lib/cmake/Foo/FooTargets.cmake
+install(
+  EXPORT "${targets_export_name}"
+  NAMESPACE "${namespace}"
+  DESTINATION "${config_install_dir}"
+)
+
 
 ########################################################################
 #
