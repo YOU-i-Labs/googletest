@@ -93,28 +93,9 @@ cxx_library(gmock_main
             src/gmock_main.cc)
 
 
-target_include_directories(
-    gmock PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>"
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
-)
-
-target_include_directories(
-  gmock_main PUBLIC
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>"
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
-)
 
 ############################################################################
 # Properties of targets
-
-# Add definitions for targets
-# Values:
-#   * Debug: -DFOO_BAR_DEBUG=1
-#   * Release: -DFOO_BAR_DEBUG=0
-#   * other: -DFOO_BAR_DEBUG=0
-target_compile_definitions( gmock PUBLIC "GOOGLETEST_GMOCK_DEBUG=$<CONFIG:Debug>")
-target_compile_definitions( gmock_main PUBLIC "GOOGLETEST_GMOCK_MAIN_DEBUG=$<CONFIG:Debug>")
 
 include(GenerateExportHeader)
 generate_export_header(gmock)
@@ -157,10 +138,6 @@ configure_package_config_file(
 )
 
 # Targets:
-#   * <prefix>/lib/libbar.a
-#   * <prefix>/lib/libbaz.a
-#   * header location after install: <prefix>/include/foo/Bar.hpp
-#   * headers can be included by C++ code `#include <foo/Bar.hpp>`
 install(
   TARGETS gmock gmock_main
   EXPORT "${targets_export_name}"
@@ -171,8 +148,6 @@ install(
 )
 
 # Headers:
-#   * Source/foo/Bar.hpp -> <prefix>/include/foo/Bar.hpp
-#   * Source/foo/Baz.hpp -> <prefix>/include/foo/Baz.hpp
 install(
   DIRECTORY ${gmock_SOURCE_DIR}/include/gmock
   DESTINATION "${include_install_dir}"
@@ -180,8 +155,6 @@ install(
 )
 
 # Export headers:
-#   * ${CMAKE_CURRENT_BINARY_DIR}/gtest_export.h -> <prefix>/include/gtest_export.h
-#   * ${CMAKE_CURRENT_BINARY_DIR}/gtest_main_export.h -> <prefix>/include/gtest_main_export.h
 install(
   FILES
   "${CMAKE_CURRENT_BINARY_DIR}/gmock_export.h"
@@ -190,15 +163,12 @@ install(
 )
 
 # Config
-#   * <prefix>/lib/cmake/Foo/FooConfig.cmake
-#   * <prefix>/lib/cmake/Foo/FooConfigVersion.cmake
 install(
   FILES "${project_config}" "${version_config}"
   DESTINATION "${config_install_dir}"
 )
 
 # Config
-#   * <prefix>/lib/cmake/Foo/FooTargets.cmake
 install(
   EXPORT "${targets_export_name}"
   NAMESPACE "${namespace}"

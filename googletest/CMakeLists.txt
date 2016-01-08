@@ -91,37 +91,8 @@ cxx_library(gtest "${cxx_strict}" src/gtest-all.cc)
 cxx_library(gtest_main "${cxx_strict}" src/gtest_main.cc)
 target_link_libraries(gtest_main gtest)
 
-# If the CMake version supports it, attach header directory information
-# to the targets for when we are part of a parent build (ie being pulled
-# in via add_subdirectory() rather than being a standalone build).
-#if (DEFINED CMAKE_VERSION AND NOT "${CMAKE_VERSION}" VERSION_LESS "3.0")
-#  target_include_directories(gtest      INTERFACE "${gtest_SOURCE_DIR}/include")
-#  target_include_directories(gtest_main INTERFACE "${gtest_SOURCE_DIR}/include")
-#endif()
-
-target_include_directories(
-  gtest PUBLIC
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>"
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
-)
-
-target_include_directories(
-  gtest_main PUBLIC
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>"
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
-)
-
-
 ############################################################################
 # Properties of targets
-
-# Add definitions for targets
-# Values:
-#   * Debug: -DFOO_BAR_DEBUG=1
-#   * Release: -DFOO_BAR_DEBUG=0
-#   * other: -DFOO_BAR_DEBUG=0
-target_compile_definitions( gtest PUBLIC "GOOGLETEST_GTEST_DEBUG=$<CONFIG:Debug>")
-target_compile_definitions( gtest_main PUBLIC "GOOGLETEST_GTEST_MAIN_DEBUG=$<CONFIG:Debug>")
 
 include(GenerateExportHeader)
 generate_export_header(gtest)
@@ -164,10 +135,6 @@ configure_package_config_file(
 )
 
 # Targets:
-#   * <prefix>/lib/libbar.a
-#   * <prefix>/lib/libbaz.a
-#   * header location after install: <prefix>/include/foo/Bar.hpp
-#   * headers can be included by C++ code `#include <foo/Bar.hpp>`
 install(
   TARGETS gtest gtest_main
   EXPORT "${targets_export_name}"
@@ -177,11 +144,7 @@ install(
   INCLUDES DESTINATION "${include_install_dir}"
 )
 
-message( "------------- targets_export_name: ${targets_export_name}")
-
 # Headers:
-#   * Source/foo/Bar.hpp -> <prefix>/include/foo/Bar.hpp
-#   * Source/foo/Baz.hpp -> <prefix>/include/foo/Baz.hpp
 install(
   DIRECTORY ${gtest_SOURCE_DIR}/include/gtest
   DESTINATION "${include_install_dir}"
@@ -189,8 +152,6 @@ install(
 )
 
 # Export headers:
-#   * ${CMAKE_CURRENT_BINARY_DIR}/gtest_export.h -> <prefix>/include/gtest_export.h
-#   * ${CMAKE_CURRENT_BINARY_DIR}/gtest_main_export.h -> <prefix>/include/gtest_main_export.h
 install(
   FILES
   "${CMAKE_CURRENT_BINARY_DIR}/gtest_export.h"
@@ -199,15 +160,12 @@ install(
 )
 
 # Config
-#   * <prefix>/lib/cmake/Foo/FooConfig.cmake
-#   * <prefix>/lib/cmake/Foo/FooConfigVersion.cmake
 install(
   FILES "${project_config}" "${version_config}"
   DESTINATION "${config_install_dir}"
 )
 
 # Config
-#   * <prefix>/lib/cmake/Foo/FooTargets.cmake
 install(
   EXPORT "${targets_export_name}"
   NAMESPACE "${namespace}"
