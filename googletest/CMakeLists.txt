@@ -94,9 +94,9 @@ target_link_libraries(gtest_main gtest)
 ############################################################################
 # Properties of targets
 
-include(GenerateExportHeader)
-generate_export_header(gtest)
-generate_export_header(gtest_main)
+#include(GenerateExportHeader)
+#generate_export_header(gtest)
+#generate_export_header(gtest_main)
 
 
 ########################################################################
@@ -145,11 +145,11 @@ install(
 )
 
 # Headers:
-install(
-  DIRECTORY ${gtest_SOURCE_DIR}/include/gtest
-  DESTINATION "${include_install_dir}"
-  FILES_MATCHING PATTERN "*.h"
-)
+#install(
+#  DIRECTORY ${gtest_SOURCE_DIR}/include/gtest
+#  DESTINATION "${include_install_dir}"
+#  FILES_MATCHING PATTERN "*.h"
+#)
 
 # Export headers:
 install(

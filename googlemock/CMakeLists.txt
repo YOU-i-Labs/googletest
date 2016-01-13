@@ -97,9 +97,9 @@ cxx_library(gmock_main
 ############################################################################
 # Properties of targets
 
-include(GenerateExportHeader)
-generate_export_header(gmock)
-generate_export_header(gmock_main)
+#include(GenerateExportHeader)
+#generate_export_header(gmock)
+#generate_export_header(gmock_main)
 
 
 ########################################################################
@@ -148,11 +148,11 @@ install(
 )
 
 # Headers:
-install(
-  DIRECTORY ${gmock_SOURCE_DIR}/include/gmock
-  DESTINATION "${include_install_dir}"
-  FILES_MATCHING PATTERN "*.h"
-)
+#install(
+#  DIRECTORY ${gmock_SOURCE_DIR}/include/gmock
+#  DESTINATION "${include_install_dir}"
+#  FILES_MATCHING PATTERN "*.h"
+#)
 
 # Export headers:
 install(
