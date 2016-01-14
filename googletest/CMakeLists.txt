@@ -91,13 +91,6 @@ cxx_library(gtest "${cxx_strict}" src/gtest-all.cc)
 cxx_library(gtest_main "${cxx_strict}" src/gtest_main.cc)
 target_link_libraries(gtest_main gtest)
 
-############################################################################
-# Properties of targets
-
-#include(GenerateExportHeader)
-#generate_export_header(gtest)
-#generate_export_header(gtest_main)
-
 
 ########################################################################
 #
@@ -145,18 +138,10 @@ install(
 )
 
 # Headers:
-#install(
-#  DIRECTORY ${gtest_SOURCE_DIR}/include/gtest
-#  DESTINATION "${include_install_dir}"
-#  FILES_MATCHING PATTERN "*.h"
-#)
-
-# Export headers:
 install(
-  FILES
-  "${CMAKE_CURRENT_BINARY_DIR}/gtest_export.h"
-  "${CMAKE_CURRENT_BINARY_DIR}/gtest_main_export.h"
+  DIRECTORY ${gtest_SOURCE_DIR}/include/gtest
   DESTINATION "${include_install_dir}"
+  FILES_MATCHING PATTERN "*.h"
 )
 
 # Config

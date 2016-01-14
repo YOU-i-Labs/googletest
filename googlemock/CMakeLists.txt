@@ -92,16 +92,6 @@ cxx_library(gmock_main
             src/gmock-all.cc
             src/gmock_main.cc)
 
-
-
-############################################################################
-# Properties of targets
-
-#include(GenerateExportHeader)
-#generate_export_header(gmock)
-#generate_export_header(gmock_main)
-
-
 ########################################################################
 #
 # Install rules
@@ -148,18 +138,10 @@ install(
 )
 
 # Headers:
-#install(
-#  DIRECTORY ${gmock_SOURCE_DIR}/include/gmock
-#  DESTINATION "${include_install_dir}"
-#  FILES_MATCHING PATTERN "*.h"
-#)
-
-# Export headers:
 install(
-  FILES
-  "${CMAKE_CURRENT_BINARY_DIR}/gmock_export.h"
-  "${CMAKE_CURRENT_BINARY_DIR}/gmock_main_export.h"
+  DIRECTORY ${gmock_SOURCE_DIR}/include/gmock
   DESTINATION "${include_install_dir}"
+  FILES_MATCHING PATTERN "*.h"
 )
 
 # Config
