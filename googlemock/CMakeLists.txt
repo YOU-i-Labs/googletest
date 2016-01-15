@@ -37,8 +37,8 @@ endif()
 # as ${gmock_SOURCE_DIR} and to the root binary directory as
 # ${gmock_BINARY_DIR}.
 # Language "C" is required for find_package(Threads).
-project(gmock CXX C)
-cmake_minimum_required(VERSION 2.6.2)
+project(gmock VERSION 1.8.0 LANGUAGES CXX C )
+cmake_minimum_required(VERSION 3.0)
 
 if (COMMAND set_up_hermetic_build)
   set_up_hermetic_build()
@@ -92,21 +92,73 @@ cxx_library(gmock_main
             src/gmock-all.cc
             src/gmock_main.cc)
 
-# If the CMake version supports it, attach header directory information
-# to the targets for when we are part of a parent build (ie being pulled
-# in via add_subdirectory() rather than being a standalone build).
-if (DEFINED CMAKE_VERSION AND NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.11")
-  target_include_directories(gmock      INTERFACE "${gmock_SOURCE_DIR}/include")
-  target_include_directories(gmock_main INTERFACE "${gmock_SOURCE_DIR}/include")
-endif()
-
 ########################################################################
 #
 # Install rules
-install(TARGETS gmock gmock_main
-  DESTINATION lib)
-install(DIRECTORY ${gmock_SOURCE_DIR}/include/gmock
-  DESTINATION include)
+
+set(config_install_dir "lib/cmake/${PROJECT_NAME}")
+set(include_install_dir "include")
+
+set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
+
+
+# Configuration
+set(version_config "${generated_dir}/${PROJECT_NAME}ConfigVersion.cmake")
+set(project_config "${generated_dir}/${PROJECT_NAME}Config.cmake")
+set(targets_export_name "${PROJECT_NAME}Targets")
+set(namespace "${PROJECT_NAME}::")
+
+# Include module with fuction 'write_basic_package_version_file'
+include(CMakePackageConfigHelpers)
+
+# Configure '<PROJECT-NAME>ConfigVersion.cmake'
+# Note: PROJECT_VERSION is used as a VERSION
+write_basic_package_version_file(
+  "${version_config}" COMPATIBILITY SameMajorVersion
+)
+
+# Configure '<PROJECT-NAME>Config.cmake'
+# Use variables:
+#   * targets_export_name
+#   * PROJECT_NAME
+configure_package_config_file(
+  "cmake/Config.cmake.in"
+  "${project_config}"
+  INSTALL_DESTINATION "${config_install_dir}"
+)
+
+# Targets:
+install(
+  TARGETS gmock gmock_main
+  EXPORT "${targets_export_name}"
+  LIBRARY DESTINATION "lib"
+  ARCHIVE DESTINATION "lib"
+  RUNTIME DESTINATION "bin"
+  INCLUDES DESTINATION "${include_install_dir}"
+)
+
+# Headers:
+install(
+  DIRECTORY ${gmock_SOURCE_DIR}/include/gmock
+  DESTINATION "${include_install_dir}"
+  FILES_MATCHING PATTERN "*.h"
+)
+
+# Config
+install(
+  FILES "${project_config}" "${version_config}"
+  DESTINATION "${config_install_dir}"
+)
+
+# Config
+install(
+  EXPORT "${targets_export_name}"
+  NAMESPACE "${namespace}"
+  DESTINATION "${config_install_dir}"
+)
+
+
+
 
 ########################################################################
 #
