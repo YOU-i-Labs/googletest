@@ -96,17 +96,17 @@ target_link_libraries(gtest_main gtest)
 #
 # Install rules
 
-set(config_install_dir "lib/cmake/${PROJECT_NAME}")
+set(config_install_dir "lib/cmake/GTest")
 set(include_install_dir "include")
 
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 
 # Configuration
-set(version_config "${generated_dir}/${PROJECT_NAME}ConfigVersion.cmake")
-set(project_config "${generated_dir}/${PROJECT_NAME}Config.cmake")
-set(targets_export_name "${PROJECT_NAME}Targets")
-set(namespace "${PROJECT_NAME}::")
+set(version_config "${generated_dir}/GTestConfigVersion.cmake")
+set(project_config "${generated_dir}/GTestConfig.cmake")
+set(targets_export_name "GTestTargets")
+set(namespace "GTest::")
 
 # Include module with fuction 'write_basic_package_version_file'
 include(CMakePackageConfigHelpers)
@@ -127,6 +127,7 @@ configure_package_config_file(
   INSTALL_DESTINATION "${config_install_dir}"
 )
 
+set_target_properties(gtest_main PROPERTIES EXPORT_NAME main)
 # Targets:
 install(
   TARGETS gtest gtest_main
