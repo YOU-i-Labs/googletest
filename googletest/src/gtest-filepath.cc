@@ -350,9 +350,12 @@ FilePath FilePath::RemoveTrailingPathSeparator() const {
 }
 
 
-#if defined(__has_feature) && __has_feature(memory_sanitizer)
-# define ATTRIBUTE_NO_SANITIZER __attribute__((no_sanitize_memory))
-#else
+#if defined(__has_feature)
+# if __has_feature(memory_sanitizer)
+#  define ATTRIBUTE_NO_SANITIZER __attribute__((no_sanitize_memory))
+# else
+#  define ATTRIBUTE_NO_SANITIZER
+# endif
 # define ATTRIBUTE_NO_SANITIZER
 #endif
 
