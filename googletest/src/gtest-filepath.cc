@@ -355,8 +355,9 @@ FilePath FilePath::RemoveTrailingPathSeparator() const {
 #  define ATTRIBUTE_NO_SANITIZER __attribute__((no_sanitize_memory))
 # else
 #  define ATTRIBUTE_NO_SANITIZER
-# endif
-# define ATTRIBUTE_NO_SANITIZER
+#endif
+#else
+#  define ATTRIBUTE_NO_SANITIZER
 #endif
 
 // Removes any redundant separators that might be in the pathname.
