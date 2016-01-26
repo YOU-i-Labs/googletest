@@ -349,11 +349,22 @@ FilePath FilePath::RemoveTrailingPathSeparator() const {
       : *this;
 }
 
+
+#if defined(__has_feature)
+# if __has_feature(memory_sanitizer)
+#  define ATTRIBUTE_NO_SANITIZER __attribute__((no_sanitize_memory))
+# else
+#  define ATTRIBUTE_NO_SANITIZER
+#endif
+#else
+#  define ATTRIBUTE_NO_SANITIZER
+#endif
+
 // Removes any redundant separators that might be in the pathname.
 // For example, "bar///foo" becomes "bar/foo". Does not eliminate other
 // redundancies that might be in a pathname involving "." or "..".
 // TODO(wan@google.com): handle Windows network shares (e.g. \\server\share).
-void FilePath::Normalize() {
+ATTRIBUTE_NO_SANITIZER void FilePath::Normalize() {
   if (pathname_.c_str() == NULL) {
     pathname_ = "";
     return;

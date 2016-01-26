@@ -34,5 +34,12 @@
 GTEST_API_ int main(int argc, char **argv) {
   printf("Running main() from gtest_main.cc\n");
   testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  const int result = RUN_ALL_TESTS();
+#if (GTEST_OS_IOS)
+  // Application will be restarted if exit code is 0
+  (void)result;
+  return EXIT_FAILURE;
+#else
+  return result;
+#endif
 }
