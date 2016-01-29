@@ -79,7 +79,7 @@ link_directories(${gtest_BINARY_DIR}/src)
 # aggressive about warnings.
 cxx_library(gtest "${cxx_strict}" src/gtest-all.cc)
 cxx_library(gtest_main "${cxx_strict}" src/gtest_main.cc)
-target_link_libraries(gtest_main PRIVATE gtest)
+target_link_libraries(gtest_main PUBLIC gtest)
 
 # Summary of tuple support for Microsoft Visual Studio:
 # Compiler    version(MS)  version(cmake)  Support
