@@ -8,6 +8,7 @@ of ```find_package()```
 
 # Google Test #
 
+[![Build status](https://ci.appveyor.com/api/projects/status/4o38plt0xbo1ubc8/branch/master?svg=true)](https://ci.appveyor.com/project/BillyDonahue/googletest/branch/master)
 
 Welcome to **Google Test**, Google's C++ test framework!
 
@@ -19,6 +20,9 @@ Please see the project page above for more information as well as the
 mailing list for questions, discussions, and development.  There is
 also an IRC channel on OFTC (irc.oftc.net) #gtest available.  Please
 join us!
+
+Getting started information for **Google Test** is available in the 
+[Google Test Primer](googletest/docs/Primer.md) documentation.
 
 **Google Mock** is an extension to Google Test for writing and using C++ mock
 classes.  See the separate [Google Mock documentation](googlemock/README.md).
@@ -108,7 +112,7 @@ package (as described below):
 ### Mac OS X Requirements ###
 
   * Mac OS X v10.4 Tiger or newer
-  * XCode Developer Tools
+  * Xcode Developer Tools
 
 ### Requirements for Contributors ###
 
