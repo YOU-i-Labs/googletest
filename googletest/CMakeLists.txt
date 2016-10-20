@@ -100,7 +100,6 @@ set(include_install_dir "include")
 
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
-
 # Configuration
 set(version_config "${generated_dir}/GTestConfigVersion.cmake")
 set(project_config "${generated_dir}/GTestConfig.cmake")
@@ -127,6 +126,7 @@ configure_package_config_file(
 )
 
 set_target_properties(gtest_main PROPERTIES EXPORT_NAME main)
+
 # Targets:
 install(
   TARGETS gtest gtest_main
@@ -156,6 +156,10 @@ install(
   NAMESPACE "${namespace}"
   DESTINATION "${config_install_dir}"
 )
+
+# Debug information .pdb for MSVC
+install_pdb_files(gtest)
+install_pdb_files(gtest_main)
 
 
 ########################################################################

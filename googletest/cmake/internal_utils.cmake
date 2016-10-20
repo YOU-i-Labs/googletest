@@ -252,3 +252,24 @@ function(py_test name)
     endif (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} GREATER 3.1)
   endif()
 endfunction()
+
+# install_pdb_files( target )
+#
+# makes sure that the .pdb files for the target end up
+# besides the .lib when the target is installed
+macro( install_pdb_files target )
+  if(MSVC)
+    set(debugOutputDir ${PROJECT_BINARY_DIR}/Debug)
+    # make sure the compiler generated .pdb files are palced besides the .lib files
+    if(NOT BUILD_SHARED_LIBS)
+      set_target_properties( ${target} PROPERTIES COMPILE_PDB_NAME_DEBUG ${target}d COMPILE_PDB_OUTPUT_DIRECTORY_DEBUG ${debugOutputDir} )
+    endif()
+    install( 
+      FILES ${debugOutputDir}/${target}d.pdb
+      DESTINATION "lib"
+      CONFIGURATIONS Debug
+    )
+  endif()
+endmacro()
+
+

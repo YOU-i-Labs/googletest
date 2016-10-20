@@ -159,7 +159,9 @@ install(
   DESTINATION "${config_install_dir}"
 )
 
-
+# Debug information .pdb for MSVC
+install_pdb_files(gmock)
+install_pdb_files(gmock_main)
 
 
 ########################################################################
