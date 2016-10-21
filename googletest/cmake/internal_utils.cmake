@@ -258,7 +258,7 @@ endfunction()
 # makes sure that the .pdb files for the target end up
 # besides the .lib when the target is installed
 macro( install_pdb_files target )
-  if(MSVC)
+  if(MSVC AND NOT ${CMAKE_VERSION} VERSION_LESS 3.1.0)    # COMPILE_PDB_... properties where introduced with cmake 3.1
     set(debugOutputDir ${PROJECT_BINARY_DIR}/Debug)
     # make sure the compiler generated .pdb files are palced besides the .lib files
     if(NOT BUILD_SHARED_LIBS)
