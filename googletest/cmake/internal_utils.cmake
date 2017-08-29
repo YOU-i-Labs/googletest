@@ -46,8 +46,11 @@ endmacro()
 # Google Mock.  You can tweak these definitions to suit your need.  A
 # variable's value is empty before it's explicitly assigned to.
 macro(config_compiler_and_linker)
-  if (NOT gtest_disable_pthreads)
+  # Note: pthreads on MinGW is not supported, even if available
+  # instead, we use windows threading primitives
+  if (NOT gtest_disable_pthreads AND NOT MINGW)
     # Defines CMAKE_USE_PTHREADS_INIT and CMAKE_THREAD_LIBS_INIT.
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads)
   endif()
 
@@ -124,10 +127,11 @@ macro(config_compiler_and_linker)
   endif()
 
   if (CMAKE_USE_PTHREADS_INIT)  # The pthreads library is available and allowed.
-    set(cxx_base_flags "${cxx_base_flags} -DGTEST_HAS_PTHREAD=1")
+    set(GTEST_HAS_PTHREAD_MACRO "-DGTEST_HAS_PTHREAD=1")
   else()
-    set(cxx_base_flags "${cxx_base_flags} -DGTEST_HAS_PTHREAD=0")
+    set(GTEST_HAS_PTHREAD_MACRO "-DGTEST_HAS_PTHREAD=0")
   endif()
+  set(cxx_base_flags "${cxx_base_flags} ${GTEST_HAS_PTHREAD_MACRO}")
 
   # For building gtest's own tests and samples.
   set(cxx_exception "${CMAKE_CXX_FLAGS} ${cxx_base_flags} ${cxx_exception_flags}")

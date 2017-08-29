@@ -163,7 +163,6 @@ install(
 install_pdb_files(gmock)
 install_pdb_files(gmock_main)
 
-
 ########################################################################
 #
 # Google Mock's own tests.

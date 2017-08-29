@@ -161,7 +161,6 @@ install(
 install_pdb_files(gtest)
 install_pdb_files(gtest_main)
 
-
 ########################################################################
 #
 # Samples on how to link user tests with gtest or gtest_main.
