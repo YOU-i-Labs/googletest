@@ -50,7 +50,9 @@ macro(config_compiler_and_linker)
   # instead, we use windows threading primitives
   if (NOT gtest_disable_pthreads AND NOT MINGW)
     # Defines CMAKE_USE_PTHREADS_INIT and CMAKE_THREAD_LIBS_INIT.
-    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    if(NOT RASPBERRY_PI)
+      set(THREADS_PREFER_PTHREAD_FLAG ON)
+    endif()
     find_package(Threads)
   endif()
 
