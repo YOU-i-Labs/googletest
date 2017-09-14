@@ -266,14 +266,21 @@ endfunction()
 macro( install_pdb_files target )
   if(MSVC AND NOT ${CMAKE_VERSION} VERSION_LESS 3.1.0)    # COMPILE_PDB_... properties where introduced with cmake 3.1
     set(debugOutputDir ${PROJECT_BINARY_DIR}/Debug)
+    set(releaseOutputDir ${PROJECT_BINARY_DIR}/Release)
     # make sure the compiler generated .pdb files are palced besides the .lib files
     if(NOT BUILD_SHARED_LIBS)
       set_target_properties( ${target} PROPERTIES COMPILE_PDB_NAME_DEBUG ${target}d COMPILE_PDB_OUTPUT_DIRECTORY_DEBUG ${debugOutputDir} )
+      set_target_properties( ${target} PROPERTIES COMPILE_PDB_NAME_RELEASE ${target} COMPILE_PDB_OUTPUT_DIRECTORY_RELEASE ${releaseOutputDir} )
     endif()
     install( 
       FILES ${debugOutputDir}/${target}d.pdb
       DESTINATION "lib"
       CONFIGURATIONS Debug
+    )
+    install( 
+      FILES ${releaseOutputDir}/${target}.pdb
+      DESTINATION "lib"
+      CONFIGURATIONS Release
     )
   endif()
 endmacro()
