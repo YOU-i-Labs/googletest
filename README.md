@@ -23,20 +23,19 @@ target_link_libraries( MyTestExe PRIVATE GTest::gtest )
 ````
 
 The package defines the following targets. `Gtest::gtest`, `Gtest::main`, `GMock::gmock` and `GMock::main`.
-Note the changed names of the `main` targets compared to the original **Google Test** project.
+Note that the names of the `main` targets have been changed compared to the original **Google Test** project.
 Link to one of the `main` targets when you want to use the default implementation of the `main()`
 function that is provided by **Google Test**.
 
 ## Caveats ##
 
 * Between package versions `1.7.0-hunter-11` and `1.8.0-hunter-p2` the package changed its repository
-because **GTest** and **GMock** were merged into a single repository. This means that the `GMock::gmock` targets
+because **GTest** and **GMock** were merged into a single repository. This means that the `GMock::...` targets
 are only available for versions later than `1.7.0-hunter-11`.
 
 * When using the package via [Git submodule](https://docs.hunter.sh/en/latest/user-guides/hunter-user/git-submodule.html),
 the compilation of the package may fail when copying the license file. This happens for versions later than `1.7.0-hunter-11`.
-To fix the problem manually set the path to the license files in your local `config.cmake` file by using something
-like `hunter_config( GTest GIT_SUBMODULE <mySubmodulePath> CMAKE_ARGS HUNTER_INSTALL_LICENSE_FILES=googletest/LICENSE)`.
+To fix the problem set the path to the license file in your local `config.cmake` by using `hunter_config( GTest GIT_SUBMODULE <mySubmodulePath> CMAKE_ARGS HUNTER_INSTALL_LICENSE_FILES=googletest/LICENSE)`.
 
 
 # Google Test #
