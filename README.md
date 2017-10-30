@@ -1,12 +1,12 @@
 # Hunter Package #
 
-This fork of Google Test is used by the [hunter package manager](https://github.com/ruslo/hunter).
+This fork of **Google Test** is used by the [hunter package manager](https://github.com/ruslo/hunter).
 This repository is used for package versions `1.8.0-hunter-p2` or later. Older package versions use
 the repository [https://github.com/hunter-packages/gtest](https://github.com/hunter-packages/gtest).
 
 ## Modifications ##
 
-This fork adds an install target that generates the '.cmake' files that are required for a config file based CMake package.
+This fork adds an install target that generates the `.cmake` files that are required for a [config file](https://cmake.org/cmake/help/v3.10/manual/cmake-packages.7.html#id1) based CMake package.
 
 ## Usage Example ##
 
@@ -22,21 +22,20 @@ target_link_libraries( MyTestExe PRIVATE GTest::gtest )
 ...
 ````
 
-The package defines 4 targets. `Gtest::gtest`, `Gtest::main`, `GMock::gmock` and `GMock::main`.
-Note the changed names of the `main` targets compared to the original `Google Test` project.
-Link to the `main` targets when you want to use the default implementation of the `main()`
-function that is provided by `Google Test`.
+The package defines the following targets. `Gtest::gtest`, `Gtest::main`, `GMock::gmock` and `GMock::main`.
+Note the changed names of the `main` targets compared to the original **Google Test** project.
+Link to one of the `main` targets when you want to use the default implementation of the `main()`
+function that is provided by **Google Test**.
 
 ## Caveats ##
 
 * Between package versions `1.7.0-hunter-11` and `1.8.0-hunter-p2` the package changed its repository
-because GTest and GMock were merged into a single repository. This means that the `GMock::gmock` targets
-are only available for versions later than `1.7.0-hunter-11`. The repository of the old package can
-be found under [https://github.com/hunter-packages/gtest](https://github.com/hunter-packages/gtest).
+because **GTest** and **GMock** were merged into a single repository. This means that the `GMock::gmock` targets
+are only available for versions later than `1.7.0-hunter-11`.
 
 * When using the package via [Git submodule](https://docs.hunter.sh/en/latest/user-guides/hunter-user/git-submodule.html),
-the compilation will fail because of errors when copying license files when using a version later than `1.7.0-hunter-11`.
-To fix this you will have to manuall< set the path to the license files in your local `config.cmake` file by using something
+the compilation of the package may fail when copying the license file. This happens for versions later than `1.7.0-hunter-11`.
+To fix the problem manually set the path to the license files in your local `config.cmake` file by using something
 like `hunter_config( GTest GIT_SUBMODULE <mySubmodulePath> CMAKE_ARGS HUNTER_INSTALL_LICENSE_FILES=googletest/LICENSE)`.
 
 
