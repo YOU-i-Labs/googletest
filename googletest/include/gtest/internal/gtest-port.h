@@ -969,6 +969,25 @@ using ::std::tuple_size;
 # define GTEST_API_
 #endif // GTEST_API_
 
+// Add an API macro for gtest_main
+#ifndef GTEST_MAIN_API_
+
+#ifdef _MSC_VER
+# if GTEST_MAIN_LINKED_AS_SHARED_LIBRARY
+#  define GTEST_MAIN_API_ __declspec(dllimport)
+# elif GTEST_CREATE_SHARED_LIBRARY
+#  define GTEST_MAIN_API_ __declspec(dllexport)
+# endif
+#elif __GNUC__ >= 4 || defined(__clang__)
+# define GTEST_MAIN_API_ __attribute__((visibility ("default")))
+#endif // _MSC_VER
+
+#endif // GTEST_API_
+
+#ifndef GTEST_MAIN_API_
+# define GTEST_MAIN_API_
+#endif // GTEST_MAIN_API_
+
 #ifdef __GNUC__
 // Ask the compiler to never inline a given function.
 # define GTEST_NO_INLINE_ __attribute__((noinline))
