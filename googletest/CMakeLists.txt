@@ -99,7 +99,7 @@ endif()
 ########################################################################
 #
 # Install rules
-add_install_rules( GTest gtest;gtest_main)
+add_install_rules( GTest "gtest;gtest_main")
 
 ########################################################################
 #

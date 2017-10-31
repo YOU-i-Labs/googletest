@@ -100,7 +100,7 @@ set_target_properties(gmock_main PROPERTIES EXPORT_NAME main)
 ########################################################################
 #
 # Install rules
-add_install_rules( GMock gmock;gmock_main )
+add_install_rules( GMock "gmock;gmock_main" )
 
 ########################################################################
 #
