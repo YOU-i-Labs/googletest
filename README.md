@@ -6,7 +6,12 @@ the repository [https://github.com/hunter-packages/gtest](https://github.com/hun
 
 ## Modifications ##
 
-This fork adds an install target that generates the `.cmake` files that are required for a [config file](https://cmake.org/cmake/help/v3.10/manual/cmake-packages.7.html#id1) based CMake package.
+* Add an install target that also generates `<target>Config.cmake` files which allows installing the project
+as a relocatable config file based CMake package. [https://cmake.org/cmake/help/v3.10/manual/cmake-packages.7.html#id1](https://cmake.org/cmake/help/v3.10/manual/cmake-packages.7.html#id1) 
+
+* Add interface compile definitions for the dll export macros when building as shared library with **MSVC**.
+This reliefes the consumers from manually setting the `GTEST_LINKED_AS_SHARED_LIBRARY=1` compile definition for their
+targets.
 
 ## Usage Example ##
 

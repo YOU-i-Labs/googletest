@@ -78,7 +78,10 @@ link_directories(${gtest_BINARY_DIR}/src)
 # are used for other targets, to ensure that gtest can be compiled by a user
 # aggressive about warnings.
 cxx_library(gtest "${cxx_strict}" src/gtest-all.cc)
+add_export_macro_interface_defintion(gtest GTEST_LINKED_AS_SHARED_LIBRARY=1 )
+
 cxx_library(gtest_main "${cxx_strict}" src/gtest_main.cc)
+add_export_macro_interface_defintion(gtest_main GTEST_MAIN_LINKED_AS_SHARED_LIBRARY=1 )
 target_link_libraries(gtest_main PUBLIC gtest)
 # preserve compatibility with old GTest hunter package
 set_target_properties(gtest_main PROPERTIES EXPORT_NAME main)

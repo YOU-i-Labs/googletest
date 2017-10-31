@@ -259,6 +259,16 @@ function(py_test name)
   endif()
 endfunction()
 
+# Adds the given macro definition to the interface of the target when compiling as shared library and msvc.
+function( add_export_macro_interface_defintion target definition )
+  if(MSVC)
+    get_property(type TARGET ${target} PROPERTY TYPE)
+    if( ${type} STREQUAL SHARED_LIBRARY )
+      target_compile_definitions( ${target} INTERFACE ${definition})
+    endif()
+  endif()
+endfunction()
+
 # add_install_rules( package targets)
 #
 # Adds install rules for the GMock and GTest packages.
