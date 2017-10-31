@@ -92,76 +92,13 @@ cxx_library(gmock_main
             src/gmock-all.cc
             src/gmock_main.cc)
 
+# preserve compatibility with old GTest hunter package
+set_target_properties(gmock_main PROPERTIES EXPORT_NAME main)
+
 ########################################################################
 #
 # Install rules
-
-set(config_install_dir "lib/cmake/GMock")
-set(include_install_dir "include")
-
-set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
-
-
-# Configuration
-set(version_config "${generated_dir}/GMockConfigVersion.cmake")
-set(project_config "${generated_dir}/GMockConfig.cmake")
-set(targets_export_name "GMockTargets")
-set(namespace "GMock::")
-
-# Include module with fuction 'write_basic_package_version_file'
-include(CMakePackageConfigHelpers)
-
-# Configure '<PROJECT-NAME>ConfigVersion.cmake'
-# Note: PROJECT_VERSION is used as a VERSION
-write_basic_package_version_file(
-  "${version_config}" COMPATIBILITY SameMajorVersion
-)
-
-# Configure '<PROJECT-NAME>Config.cmake'
-# Use variables:
-#   * targets_export_name
-#   * PROJECT_NAME
-configure_package_config_file(
-  "cmake/Config.cmake.in"
-  "${project_config}"
-  INSTALL_DESTINATION "${config_install_dir}"
-)
-
-
-set_target_properties(gmock_main PROPERTIES EXPORT_NAME main)
-# Targets:
-install(
-  TARGETS gmock gmock_main
-  EXPORT "${targets_export_name}"
-  LIBRARY DESTINATION "lib"
-  ARCHIVE DESTINATION "lib"
-  RUNTIME DESTINATION "bin"
-  INCLUDES DESTINATION "${include_install_dir}"
-)
-
-# Headers:
-install(
-  DIRECTORY ${gmock_SOURCE_DIR}/include/gmock
-  DESTINATION "${include_install_dir}"
-  FILES_MATCHING PATTERN "*.h"
-)
-
-# Config
-install(
-  FILES "${project_config}" "${version_config}"
-  DESTINATION "${config_install_dir}"
-)
-
-# Config
-install(
-  EXPORT "${targets_export_name}"
-  NAMESPACE "${namespace}"
-  DESTINATION "${config_install_dir}"
-)
-
-# Debug information .pdb for MSVC
-install_pdb_files(gmock)
-install_pdb_files(gmock_main)
+add_install_rules( GMock gmock;gmock_main )
 
 ########################################################################
 #

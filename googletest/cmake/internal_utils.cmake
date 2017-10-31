@@ -259,10 +259,84 @@ function(py_test name)
   endif()
 endfunction()
 
+# add_install_rules( package targets)
+#
+# Adds install rules for the GMock and GTest packages.
+function( add_install_rules package targets )
+
+  set(config_install_dir "lib/cmake/${package}")
+  set(include_install_dir "include")
+
+  set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
+
+  # Configuration
+  set(version_config "${generated_dir}/${package}ConfigVersion.cmake")
+  set(project_config "${generated_dir}/${package}Config.cmake")
+  set(targets_export_name "${package}Targets")
+  set(namespace "${package}::")
+
+  # Include module with fuction 'write_basic_package_version_file'
+  include(CMakePackageConfigHelpers)
+
+  # Configure '<PROJECT-NAME>ConfigVersion.cmake'
+  # Note: PROJECT_VERSION is used as a VERSION
+  write_basic_package_version_file(
+    "${version_config}" COMPATIBILITY SameMajorVersion
+  )
+
+  # Configure '<PROJECT-NAME>Config.cmake'
+  # Use variables:
+  #   * targets_export_name
+  #   * PROJECT_NAME
+  configure_package_config_file(
+    "cmake/Config.cmake.in"
+    "${project_config}"
+    INSTALL_DESTINATION "${config_install_dir}"
+  )
+
+  # Targets:
+  install(
+    TARGETS ${targets}
+    EXPORT "${targets_export_name}"
+    LIBRARY DESTINATION "lib"
+    ARCHIVE DESTINATION "lib"
+    RUNTIME DESTINATION "bin"
+    INCLUDES DESTINATION "${include_install_dir}"
+  )
+
+  # Headers:
+  string(TOLOWER ${package} package_lower)
+  install(
+    DIRECTORY ${${package_lower}_SOURCE_DIR}/include/${package_lower}
+    DESTINATION "${include_install_dir}"
+    FILES_MATCHING PATTERN "*.h"
+  )
+
+  # Config
+  install(
+    FILES "${project_config}" "${version_config}"
+    DESTINATION "${config_install_dir}"
+  )
+
+  # Config
+  install(
+    EXPORT "${targets_export_name}"
+    NAMESPACE "${namespace}"
+    DESTINATION "${config_install_dir}"
+  )
+
+  # Debug information .pdb for MSVC
+  foreach(target ${targets})
+    install_pdb_files(${target})
+  endforeach()
+
+endfunction()
+
+
 # install_pdb_files( target )
 #
-# makes sure that the .pdb files for the target end up
-# besides the .lib when the target is installed
+# Makes sure that compiler and linker generated .pdb files ares installed
+# when compiling with MSVC and debug options.
 function( install_pdb_files target )
   if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.1.0)    # COMPILE_PDB_... properties where introduced with cmake 3.1
     foreach( config ${CMAKE_BUILD_TYPE} ${CMAKE_CONFIGURATION_TYPES})
