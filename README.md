@@ -42,6 +42,8 @@ are only available for versions later than `1.7.0-hunter-11`.
 the compilation of the package may fail when copying the license file. This happens for versions later than `1.7.0-hunter-11`.
 To fix the problem set the path to the license file in your local `config.cmake` by using `hunter_config( GTest GIT_SUBMODULE <mySubmodulePath> CMAKE_ARGS HUNTER_INSTALL_LICENSE_FILES=googletest/LICENSE)`.
 
+* If you do not need the **GMock** package, you can use `hunter_config(GTest VERSION <your_version> CMAKE_ARGS BUILD_GMOCK=OFF BUILD_GTEST=ON )` to only build
+the **GTest** package.
 
 # Google Test #
 
