@@ -274,8 +274,7 @@ endfunction()
 # Adds install rules for the GMock and GTest packages.
 function( add_install_rules package targets )
 
-  set(config_install_dir "lib/cmake/${package}")
-  set(include_install_dir "include")
+  set(config_install_dir "${CMAKE_INSTALL_LIBDIR}/cmake/${package}")
 
   set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
@@ -308,17 +307,17 @@ function( add_install_rules package targets )
   install(
     TARGETS ${targets}
     EXPORT "${targets_export_name}"
-    LIBRARY DESTINATION "lib"
-    ARCHIVE DESTINATION "lib"
-    RUNTIME DESTINATION "bin"
-    INCLUDES DESTINATION "${include_install_dir}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
   )
 
   # Headers:
   string(TOLOWER ${package} package_lower)
   install(
     DIRECTORY ${${package_lower}_SOURCE_DIR}/include/${package_lower}
-    DESTINATION "${include_install_dir}"
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
     FILES_MATCHING PATTERN "*.h"
   )
 
@@ -365,7 +364,7 @@ function( install_pdb_files target )
 
         install( 
           FILES ${output_dir}/${output_name}.pdb
-          DESTINATION "lib"
+          DESTINATION "${CMAKE_INSTALL_LIBDIR}"
           CONFIGURATIONS ${config}
         )
 
@@ -381,7 +380,7 @@ function( install_pdb_files target )
 
         install( 
           FILES ${output_dir}/${output_name}.pdb
-          DESTINATION "bin"
+          DESTINATION "${CMAKE_INSTALL_BINDIR}"
           CONFIGURATIONS ${config}
         )
 
