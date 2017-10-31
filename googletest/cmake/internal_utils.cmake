@@ -269,10 +269,83 @@ function( add_export_macro_interface_defintion target definition )
   endif()
 endfunction()
 
+# add_install_rules( package targets)
+#
+# Adds install rules for the GMock and GTest packages.
+function( add_install_rules package targets )
+
+  set(config_install_dir "${CMAKE_INSTALL_LIBDIR}/cmake/${package}")
+
+  set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
+
+  # Configuration
+  set(version_config "${generated_dir}/${package}ConfigVersion.cmake")
+  set(project_config "${generated_dir}/${package}Config.cmake")
+  set(targets_export_name "${package}Targets")
+  set(namespace "${package}::")
+
+  # Include module with fuction 'write_basic_package_version_file'
+  include(CMakePackageConfigHelpers)
+
+  # Configure '<PROJECT-NAME>ConfigVersion.cmake'
+  # Note: PROJECT_VERSION is used as a VERSION
+  write_basic_package_version_file(
+    "${version_config}" COMPATIBILITY SameMajorVersion
+  )
+
+  # Configure '<PROJECT-NAME>Config.cmake'
+  # Use variables:
+  #   * targets_export_name
+  #   * PROJECT_NAME
+  configure_package_config_file(
+    "cmake/Config.cmake.in"
+    "${project_config}"
+    INSTALL_DESTINATION "${config_install_dir}"
+  )
+
+  # Targets:
+  install(
+    TARGETS ${targets}
+    EXPORT "${targets_export_name}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+  )
+
+  # Headers:
+  string(TOLOWER ${package} package_lower)
+  install(
+    DIRECTORY ${${package_lower}_SOURCE_DIR}/include/${package_lower}
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    FILES_MATCHING PATTERN "*.h"
+  )
+
+  # Config
+  install(
+    FILES "${project_config}" "${version_config}"
+    DESTINATION "${config_install_dir}"
+  )
+
+  # Config
+  install(
+    EXPORT "${targets_export_name}"
+    NAMESPACE "${namespace}"
+    DESTINATION "${config_install_dir}"
+  )
+
+  # Debug information .pdb for MSVC
+  foreach(target ${targets})
+    install_pdb_files(${target})
+  endforeach()
+
+endfunction()
+
+
 # install_pdb_files( target )
 #
-# makes sure that the .pdb files for the target end up
-# besides the .lib when the target is installed
+# Makes sure that compiler and linker generated .pdb files ares installed
+# when compiling with MSVC and debug options.
 function( install_pdb_files target )
   if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.1.0)    # COMPILE_PDB_... properties where introduced with cmake 3.1
     foreach( config ${CMAKE_BUILD_TYPE} ${CMAKE_CONFIGURATION_TYPES})
@@ -291,7 +364,7 @@ function( install_pdb_files target )
 
         install( 
           FILES ${output_dir}/${output_name}.pdb
-          DESTINATION "lib"
+          DESTINATION "${CMAKE_INSTALL_LIBDIR}"
           CONFIGURATIONS ${config}
         )
 
@@ -301,13 +374,13 @@ function( install_pdb_files target )
       target_has_pdb_linker_output( has_pdb_linker_output ${target} ${config})
       if(has_pdb_linker_output)
 
-        set( output_name ${target}${name_config_postfix}-compiler )
+        set( output_name ${target}${name_config_postfix}-linker )
         set_property( TARGET ${target} PROPERTY PDB_NAME_${config_suffix} ${output_name} )
         set_property( TARGET ${target} PROPERTY PDB_OUTPUT_DIRECTORY_${config_suffix} ${output_dir} )
 
         install( 
           FILES ${output_dir}/${output_name}.pdb
-          DESTINATION "bin"
+          DESTINATION "${CMAKE_INSTALL_BINDIR}"
           CONFIGURATIONS ${config}
         )
 
