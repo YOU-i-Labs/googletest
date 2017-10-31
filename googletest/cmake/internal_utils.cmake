@@ -374,7 +374,7 @@ function( install_pdb_files target )
       target_has_pdb_linker_output( has_pdb_linker_output ${target} ${config})
       if(has_pdb_linker_output)
 
-        set( output_name ${target}${name_config_postfix}-compiler )
+        set( output_name ${target}${name_config_postfix}-linker )
         set_property( TARGET ${target} PROPERTY PDB_NAME_${config_suffix} ${output_name} )
         set_property( TARGET ${target} PROPERTY PDB_OUTPUT_DIRECTORY_${config_suffix} ${output_dir} )
 
