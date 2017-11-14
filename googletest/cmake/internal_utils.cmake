@@ -347,7 +347,7 @@ endfunction()
 # Makes sure that compiler and linker generated .pdb files ares installed
 # when compiling with MSVC and debug options.
 function( install_pdb_files target )
-  if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.1.0)    # COMPILE_PDB_... properties where introduced with cmake 3.1
+  if( NOT ${CMAKE_VERSION} VERSION_LESS 3.1.0)    # COMPILE_PDB_... properties where introduced with cmake 3.1
     foreach( config ${CMAKE_BUILD_TYPE} ${CMAKE_CONFIGURATION_TYPES})
       string( TOUPPER ${config} config_suffix)
 
