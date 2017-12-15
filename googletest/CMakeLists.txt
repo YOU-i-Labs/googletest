@@ -27,6 +27,8 @@ option(
   "Build gtest with internal symbols hidden in shared libraries."
   OFF)
 
+set(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "Generate debug library name with a postfix.")
+
 # Defines pre_project_set_up_hermetic_build() and set_up_hermetic_build().
 include(cmake/hermetic_build.cmake OPTIONAL)
 
@@ -66,8 +68,17 @@ include_directories(
   ${gtest_SOURCE_DIR}/include
   ${gtest_SOURCE_DIR})
 
-# Where Google Test's libraries can be found.
-link_directories(${gtest_BINARY_DIR}/src)
+# Summary of tuple support for Microsoft Visual Studio:
+# Compiler    version(MS)  version(cmake)  Support
+# ----------  -----------  --------------  -----------------------------
+# <= VS 2010  <= 10        <= 1600         Use Google Tests's own tuple.
+# VS 2012     11           1700            std::tr1::tuple + _VARIADIC_MAX=10
+# VS 2013     12           1800            std::tr1::tuple
+# VS 2015     14           1900            std::tuple
+# VS 2017     15           >= 1910         std::tuple
+if (MSVC AND MSVC_VERSION EQUAL 1700)
+  add_definitions(/D _VARIADIC_MAX=10)
+endif()
 
 ########################################################################
 #
@@ -82,19 +93,10 @@ add_export_macro_interface_defintion(gtest GTEST_LINKED_AS_SHARED_LIBRARY=1 )
 
 cxx_library(gtest_main "${cxx_strict}" src/gtest_main.cc)
 add_export_macro_interface_defintion(gtest_main GTEST_MAIN_LINKED_AS_SHARED_LIBRARY=1 )
-target_link_libraries(gtest_main PUBLIC gtest)
 # preserve compatibility with old GTest hunter package
 set_target_properties(gtest_main PROPERTIES EXPORT_NAME main)
 
-# Summary of tuple support for Microsoft Visual Studio:
-# Compiler    version(MS)  version(cmake)  Support
-# ----------  -----------  --------------  -----------------------------
-# <= VS 2010  <= 10        <= 1600         Use Google Tests's own tuple.
-# VS 2012     11           1700            std::tr1::tuple + _VARIADIC_MAX=10
-# VS 2013     12           1800            std::tr1::tuple
-if (MSVC AND MSVC_VERSION EQUAL 1700)
-  target_compile_definitions(gtest PUBLIC _VARIADIC_MAX=10)
-endif()
+target_link_libraries(gtest_main gtest)
 
 ########################################################################
 #

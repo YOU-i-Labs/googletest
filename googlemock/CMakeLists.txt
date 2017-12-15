@@ -69,6 +69,8 @@ include_directories("${gmock_SOURCE_DIR}/include"
 # <= VS 2010  <= 10        <= 1600         Use Google Tests's own tuple.
 # VS 2012     11           1700            std::tr1::tuple + _VARIADIC_MAX=10
 # VS 2013     12           1800            std::tr1::tuple
+# VS 2015     14           1900            std::tuple
+# VS 2017     15           >= 1910         std::tuple
 if (MSVC AND MSVC_VERSION EQUAL 1700)
   add_definitions(/D _VARIADIC_MAX=10)
 endif()
@@ -96,6 +98,7 @@ add_export_macro_interface_defintion( gmock_main GTEST_LINKED_AS_SHARED_LIBRARY=
 
 # preserve compatibility with old GTest hunter package
 set_target_properties(gmock_main PROPERTIES EXPORT_NAME main)
+
 
 ########################################################################
 #
@@ -137,7 +140,7 @@ if (gmock_build_tests)
   cxx_test(gmock_link_test gmock_main test/gmock_link2_test.cc)
   cxx_test(gmock_test gmock_main)
 
-  if (CMAKE_USE_PTHREADS_INIT)
+  if (DEFINED GTEST_HAS_PTHREAD)
     cxx_test(gmock_stress_test gmock)
   endif()
 
