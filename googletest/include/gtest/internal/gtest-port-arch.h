@@ -94,4 +94,8 @@
 # define GTEST_OS_QNX 1
 #endif  // __CYGWIN__
 
+#if defined __ORBIS__
+# define GTEST_OS_PS4 1
+#endif
+
 #endif  // GTEST_INCLUDE_GTEST_INTERNAL_GTEST_PORT_ARCH_H_
