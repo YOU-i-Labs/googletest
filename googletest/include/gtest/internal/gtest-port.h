@@ -436,7 +436,7 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
 #define GTEST_HAS_POSIX_RE (__ANDROID_API__ >= 9)
 #else
 #if !(defined(GTEST_OS_WINDOWS) || defined(GTEST_OS_XTENSA) || \
-      defined(GTEST_OS_QURT))
+      defined(GTEST_OS_QURT) || defined(GTEST_OS_PS4))
 #define GTEST_HAS_POSIX_RE 1
 #else
 #define GTEST_HAS_POSIX_RE 0
@@ -660,7 +660,7 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
 #if defined(GTEST_OS_WINDOWS_MOBILE) || defined(GTEST_OS_WINDOWS_PHONE) || \
     defined(GTEST_OS_WINDOWS_RT) || defined(GTEST_OS_WINDOWS_GAMES) ||     \
     defined(GTEST_OS_ESP8266) || defined(GTEST_OS_XTENSA) ||               \
-    defined(GTEST_OS_QURT) || !GTEST_HAS_FILE_SYSTEM
+    defined(GTEST_OS_QURT) || defined(GTEST_OS_PS4) || !GTEST_HAS_FILE_SYSTEM
 #define GTEST_HAS_STREAM_REDIRECTION 0
 #else
 #define GTEST_HAS_STREAM_REDIRECTION 1
@@ -678,7 +678,8 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
      defined(GTEST_OS_QNX) || defined(GTEST_OS_FREEBSD) ||            \
      defined(GTEST_OS_NETBSD) || defined(GTEST_OS_FUCHSIA) ||         \
      defined(GTEST_OS_DRAGONFLY) || defined(GTEST_OS_GNU_KFREEBSD) || \
-     defined(GTEST_OS_HAIKU) || defined(GTEST_OS_GNU_HURD))
+     defined(GTEST_OS_HAIKU) || defined(GTEST_OS_GNU_HURD)) &&        \
+    !defined(GTEST_OS_PS4)
 // Death tests require a file system to work properly.
 #if GTEST_HAS_FILE_SYSTEM
 #define GTEST_HAS_DEATH_TEST 1
@@ -2102,7 +2103,11 @@ inline int StrCaseCmp(const char* s1, const char* s2) {
 
 #else
 
+#if defined(GTEST_OS_PS4)
+inline int DoIsATTY(int /* fd */) { return 0; }
+#else
 inline int DoIsATTY(int fd) { return isatty(fd); }
+#endif
 inline int StrCaseCmp(const char* s1, const char* s2) {
   return strcasecmp(s1, s2);
 }
@@ -2131,7 +2136,7 @@ GTEST_DISABLE_MSC_DEPRECATED_PUSH_()
 #if !defined(GTEST_OS_WINDOWS_MOBILE) && !defined(GTEST_OS_WINDOWS_PHONE) && \
     !defined(GTEST_OS_WINDOWS_RT) && !defined(GTEST_OS_WINDOWS_GAMES) &&     \
     !defined(GTEST_OS_ESP8266) && !defined(GTEST_OS_XTENSA) &&               \
-    !defined(GTEST_OS_QURT)
+    !defined(GTEST_OS_QURT) && !defined(GTEST_OS_PS4)
 inline int ChDir(const char* dir) { return chdir(dir); }
 #endif
 inline FILE* FOpen(const char* path, const char* mode) {
@@ -2170,7 +2175,7 @@ inline const char* StrError(int errnum) { return strerror(errnum); }
 inline const char* GetEnv(const char* name) {
 #if defined(GTEST_OS_WINDOWS_MOBILE) || defined(GTEST_OS_WINDOWS_PHONE) || \
     defined(GTEST_OS_ESP8266) || defined(GTEST_OS_XTENSA) ||               \
-    defined(GTEST_OS_QURT)
+    defined(GTEST_OS_QURT) || defined(GTEST_OS_PS4)
   // We are on an embedded platform, which has no environment variables.
   static_cast<void>(name);  // To prevent 'unused argument' warning.
   return nullptr;
