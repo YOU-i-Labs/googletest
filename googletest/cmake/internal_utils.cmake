@@ -155,7 +155,7 @@ function(cxx_library_with_type name type cxx_flags)
   set_target_properties(${name}
     PROPERTIES
     DEBUG_POSTFIX "d")
-  if(NOT IOS) # Fix multiarch build
+  if(NOT IOS AND NOT TVOS) # Fix multiarch build
   # Set the output directory for build artifacts
   set_target_properties(${name}
     PROPERTIES
