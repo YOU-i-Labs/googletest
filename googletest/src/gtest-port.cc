@@ -57,10 +57,14 @@
 
 #if GTEST_OS_DRAGONFLY || GTEST_OS_FREEBSD || GTEST_OS_GNU_KFREEBSD || \
     GTEST_OS_NETBSD || GTEST_OS_OPENBSD
+#if defined(__ORBIS__)
+// disabled on orbis
+#else
 # include <sys/sysctl.h>
 # if GTEST_OS_DRAGONFLY || GTEST_OS_FREEBSD || GTEST_OS_GNU_KFREEBSD
 #  include <sys/user.h>
 # endif
+#endif // __ORBIS__
 #endif
 
 #if GTEST_OS_QNX
@@ -137,6 +141,13 @@ size_t GetThreadCount() {
   } else {
     return 0;
   }
+}
+
+#elif defined(__ORBIS__)
+
+size_t GetThreadCount() {
+  // this is the number of threads that always exist on this platform
+  return 6;
 }
 
 #elif GTEST_OS_DRAGONFLY || GTEST_OS_FREEBSD || GTEST_OS_GNU_KFREEBSD || \

@@ -617,8 +617,15 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
 // Determines whether test results can be streamed to a socket.
 #if GTEST_OS_LINUX || GTEST_OS_GNU_KFREEBSD || GTEST_OS_DRAGONFLY || \
     GTEST_OS_FREEBSD || GTEST_OS_NETBSD || GTEST_OS_OPENBSD
-# define GTEST_CAN_STREAM_RESULTS_ 1
+
+#if defined(__ORBIS__)
+    // For disable the streaming.
+#else
+    # define GTEST_CAN_STREAM_RESULTS_ 1
+#endif // __ORBIS__
+    
 #endif
+
 
 // Defines some utility macros.
 
