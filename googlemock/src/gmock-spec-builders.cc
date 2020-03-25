@@ -632,7 +632,7 @@ class MockObjectRegistry {
       // RUN_ALL_TESTS() has already returned when this destructor is
       // called.  Therefore we cannot use the normal Google Test
       // failure reporting mechanism.
-#if defined(GTEST_OS_PS4)
+#if defined(GTEST_OS_PLAYSTATION)
       _Exit(1);
 #else
       _exit(1);  // We cannot call exit() as it is not reentrant and
