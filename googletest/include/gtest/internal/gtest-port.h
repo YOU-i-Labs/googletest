@@ -683,6 +683,13 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
 #endif
 
 
+#if defined(__ANDROID__)
+
+#define GTEST_DISALLOW_ASSIGN_(type)
+#define GTEST_DISALLOW_COPY_AND_ASSIGN_(type)
+
+#else
+
 // A macro to disallow operator=
 // This should be used in the private: declarations for a class.
 #define GTEST_DISALLOW_ASSIGN_(type) \
@@ -693,6 +700,8 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
 #define GTEST_DISALLOW_COPY_AND_ASSIGN_(type) \
   type(type const &) = delete; \
   GTEST_DISALLOW_ASSIGN_(type)
+
+#endif
 
 // Tell the compiler to warn about unused return values for functions declared
 // with this macro.  The macro should be used on function declarations
