@@ -683,7 +683,7 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
 #endif
 
 
-#if defined(__ANDROID__)
+#if defined(__ANDROID__) || defined(__ORBIS__) || defined(__PROSPERO__)
 
 #define GTEST_DISALLOW_ASSIGN_(type)
 #define GTEST_DISALLOW_COPY_AND_ASSIGN_(type)
