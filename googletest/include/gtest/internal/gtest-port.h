@@ -402,7 +402,7 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
 #define GTEST_HAS_POSIX_RE (__ANDROID_API__ >= 9)
 #else
 #define GTEST_HAS_POSIX_RE \
-  !(GTEST_OS_WINDOWS || GTEST_OS_XTENSA || GTEST_OS_QURT)
+  !(GTEST_OS_WINDOWS || GTEST_OS_XTENSA || GTEST_OS_QURT && !GTEST_OS_PLAYSTATION)
 #endif
 #endif
 
@@ -605,7 +605,7 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
 // a file system, stream redirection is not supported.
 #if GTEST_OS_WINDOWS_MOBILE || GTEST_OS_WINDOWS_PHONE ||          \
     GTEST_OS_WINDOWS_RT || GTEST_OS_ESP8266 || GTEST_OS_XTENSA || \
-    GTEST_OS_QURT || !GTEST_HAS_FILE_SYSTEM
+    GTEST_OS_QURT || !GTEST_HAS_FILE_SYSTEM || GTEST_OS_PLAYSTATION
 #define GTEST_HAS_STREAM_REDIRECTION 0
 #else
 #define GTEST_HAS_STREAM_REDIRECTION 1
@@ -614,15 +614,15 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
 
 // Determines whether to support death tests.
 // pops up a dialog window that cannot be suppressed programmatically.
-#if (GTEST_OS_LINUX || GTEST_OS_CYGWIN || GTEST_OS_SOLARIS ||             \
+#if ((GTEST_OS_LINUX || GTEST_OS_CYGWIN || GTEST_OS_SOLARIS ||             \
      (GTEST_OS_MAC && !GTEST_OS_IOS) ||                                   \
      (GTEST_OS_WINDOWS_DESKTOP && _MSC_VER) || GTEST_OS_WINDOWS_MINGW ||  \
      GTEST_OS_AIX || GTEST_OS_HPUX || GTEST_OS_OPENBSD || GTEST_OS_QNX || \
      GTEST_OS_FREEBSD || GTEST_OS_NETBSD || GTEST_OS_FUCHSIA ||           \
      GTEST_OS_DRAGONFLY || GTEST_OS_GNU_KFREEBSD || GTEST_OS_HAIKU ||     \
-     GTEST_OS_GNU_HURD)
+     GTEST_OS_GNU_HURD))
 // Death tests require a file system to work properly.
-#if GTEST_HAS_FILE_SYSTEM
+#if GTEST_HAS_FILE_SYSTEM && !GTEST_OS_PLAYSTATION
 #define GTEST_HAS_DEATH_TEST 1
 #endif  // GTEST_HAS_FILE_SYSTEM
 #endif
@@ -645,8 +645,13 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
 #if GTEST_OS_LINUX || GTEST_OS_GNU_KFREEBSD || GTEST_OS_DRAGONFLY || \
     GTEST_OS_FREEBSD || GTEST_OS_NETBSD || GTEST_OS_OPENBSD ||       \
     GTEST_OS_GNU_HURD
-#define GTEST_CAN_STREAM_RESULTS_ 1
+#if defined(GTEST_OS_PLAYSTATION)
+    // For disable the streaming.
+#else
+    # define GTEST_CAN_STREAM_RESULTS_ 1
+#endif // __ORBIS__ || __PROSPERO__
 #endif
+
 
 // Defines some utility macros.
 
@@ -717,6 +722,30 @@ typedef struct _RTL_CRITICAL_SECTION GTEST_CRITICAL_SECTION;
 #else
 #define GTEST_ATTRIBUTE_PRINTF_(string_index, first_to_check)
 #endif
+
+/*
+// MERGE FROM 1.10
+#if defined(__ANDROID__) || defined(__ORBIS__) || defined(__PROSPERO__)
+
+#define GTEST_DISALLOW_ASSIGN_(type)
+#define GTEST_DISALLOW_COPY_AND_ASSIGN_(type)
+
+#else
+
+// A macro to disallow operator=
+// This should be used in the private: declarations for a class.
+#define GTEST_DISALLOW_ASSIGN_(type) \
+  void operator=(type const &) = delete
+
+// A macro to disallow copy constructor and operator=
+// This should be used in the private: declarations for a class.
+#define GTEST_DISALLOW_COPY_AND_ASSIGN_(type) \
+  type(type const &) = delete; \
+  GTEST_DISALLOW_ASSIGN_(type)
+
+#endif
+// END MERGE FROM 1.10
+*/
 
 // Tell the compiler to warn about unused return values for functions declared
 // with this macro.  The macro should be used on function declarations
@@ -2056,7 +2085,12 @@ inline char* StrDup(const char* src) { return strdup(src); }
 
 #else
 
+# if GTEST_OS_PLAYSTATION
+inline int DoIsATTY(int /* fd */) { return 0; }
+# else
 inline int DoIsATTY(int fd) { return isatty(fd); }
+# endif
+
 inline int StrCaseCmp(const char* s1, const char* s2) {
   return strcasecmp(s1, s2);
 }
@@ -2085,7 +2119,7 @@ GTEST_DISABLE_MSC_DEPRECATED_PUSH_()
 #if GTEST_HAS_FILE_SYSTEM
 #if !GTEST_OS_WINDOWS_MOBILE && !GTEST_OS_WINDOWS_PHONE &&           \
     !GTEST_OS_WINDOWS_RT && !GTEST_OS_ESP8266 && !GTEST_OS_XTENSA && \
-    !GTEST_OS_QURT
+    !GTEST_OS_QURT  && !GTEST_OS_PLAYSTATION
 inline int ChDir(const char* dir) { return chdir(dir); }
 #endif
 inline FILE* FOpen(const char* path, const char* mode) {
@@ -2124,7 +2158,7 @@ inline const char* StrError(int errnum) { return strerror(errnum); }
 inline const char* GetEnv(const char* name) {
 #if GTEST_OS_WINDOWS_MOBILE || GTEST_OS_WINDOWS_PHONE ||          \
     GTEST_OS_WINDOWS_RT || GTEST_OS_ESP8266 || GTEST_OS_XTENSA || \
-    GTEST_OS_QURT
+    GTEST_OS_QURT || GTEST_OS_PLAYSTATION
   // We are on an embedded platform, which has no environment variables.
   static_cast<void>(name);  // To prevent 'unused argument' warning.
   return nullptr;

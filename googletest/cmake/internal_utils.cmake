@@ -77,7 +77,7 @@ macro(config_compiler_and_linker)
   if (MSVC)
     # Newlines inside flags variables break CMake's NMake generator.
     # TODO(vladl@google.com): Add -RTCs and -RTCu to debug builds.
-    set(cxx_base_flags "-GS -W4 -WX -wd4251 -wd4275 -nologo -J")
+    set(cxx_base_flags "-GS -W4 -WX -wd4251 -wd4275 -wd4447 -nologo -J -Zi")
     set(cxx_base_flags "${cxx_base_flags} -D_UNICODE -DUNICODE -DWIN32 -D_WIN32")
     set(cxx_base_flags "${cxx_base_flags} -DSTRICT -DWIN32_LEAN_AND_MEAN")
     set(cxx_exception_flags "-EHsc -D_HAS_EXCEPTIONS=1")
@@ -161,14 +161,19 @@ function(cxx_library_with_type name type cxx_flags)
   set_target_properties(${name}
     PROPERTIES
     COMPILE_FLAGS "${cxx_flags}")
+  # Generate debug library name with a postfix.
+  set_target_properties(${name}
+    PROPERTIES
+    DEBUG_POSTFIX "d")
+  if(NOT IOS AND NOT TVOS) # Fix multiarch build
   # Set the output directory for build artifacts
   set_target_properties(${name}
     PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-    PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
-    COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+    PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+  endif()
   # make PDBs match library name
   get_target_property(pdb_debug_postfix ${name} DEBUG_POSTFIX)
   set_target_properties(${name}

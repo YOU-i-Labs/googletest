@@ -531,6 +531,8 @@ class MockObjectRegistry {
       // failure reporting mechanism.
 #if GTEST_OS_QURT
       qurt_exception_raise_fatal();
+#elif defined(GTEST_OS_PLAYSTATION)
+      _Exit(1);
 #else
       _exit(1);  // We cannot call exit() as it is not reentrant and
                  // may already have been called.

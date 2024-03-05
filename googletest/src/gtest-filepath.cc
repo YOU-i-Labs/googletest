@@ -70,7 +70,7 @@ namespace internal {
 const char kPathSeparator = '\\';
 const char kAlternatePathSeparator = '/';
 const char kAlternatePathSeparatorString[] = "/";
-#if GTEST_OS_WINDOWS_MOBILE
+# if GTEST_OS_WINDOWS_MOBILE || GTEST_OS_PLAYSTATION
 // Windows CE doesn't have a current directory. You should not use
 // the current directory in tests on Windows CE, but this at least
 // provides a reasonable fallback.
@@ -98,7 +98,7 @@ static bool IsPathSeparator(char c) {
 FilePath FilePath::GetCurrentDir() {
 #if GTEST_OS_WINDOWS_MOBILE || GTEST_OS_WINDOWS_PHONE ||         \
     GTEST_OS_WINDOWS_RT || GTEST_OS_ESP8266 || GTEST_OS_ESP32 || \
-    GTEST_OS_XTENSA || GTEST_OS_QURT
+    GTEST_OS_XTENSA || GTEST_OS_QURT || GTEST_OS_PLAYSTATION
   // These platforms do not have a current directory, so we just return
   // something reasonable.
   return FilePath(kCurrentDirectoryString);
