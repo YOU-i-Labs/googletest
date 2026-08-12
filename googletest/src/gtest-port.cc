@@ -64,11 +64,15 @@
 #if defined(GTEST_OS_DRAGONFLY) || defined(GTEST_OS_FREEBSD) ||   \
     defined(GTEST_OS_GNU_KFREEBSD) || defined(GTEST_OS_NETBSD) || \
     defined(GTEST_OS_OPENBSD)
+#if defined(__ORBIS__) || defined(__PROSPERO__)
+// disabled on PlayStation platforms
+#else
 #include <sys/sysctl.h>
 #if defined(GTEST_OS_DRAGONFLY) || defined(GTEST_OS_FREEBSD) || \
     defined(GTEST_OS_GNU_KFREEBSD)
 #include <sys/user.h>
 #endif
+#endif  // __ORBIS__ || __PROSPERO__
 #endif
 
 #ifdef GTEST_OS_QNX
@@ -96,7 +100,14 @@
 namespace testing {
 namespace internal {
 
-#if defined(GTEST_OS_LINUX) || defined(GTEST_OS_GNU_HURD)
+#if defined(__ORBIS__) || defined(__PROSPERO__)
+
+// Returns the number of active threads on PlayStation platforms.
+size_t GetThreadCount() {
+  return 6;
+}
+
+#elif defined(GTEST_OS_LINUX) || defined(GTEST_OS_GNU_HURD)
 
 namespace {
 template <typename T>

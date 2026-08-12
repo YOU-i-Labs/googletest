@@ -103,7 +103,7 @@ FilePath FilePath::GetCurrentDir() {
     defined(GTEST_OS_WINDOWS_RT) || defined(GTEST_OS_ESP8266) ||           \
     defined(GTEST_OS_ESP32) || defined(GTEST_OS_XTENSA) ||                 \
     defined(GTEST_OS_QURT) || defined(GTEST_OS_NXP_QN9090) ||              \
-    defined(GTEST_OS_NRF52) || defined(GTEST_OS_PS4)
+    defined(GTEST_OS_NRF52) || defined(GTEST_OS_PLAYSTATION)
   // These platforms do not have a current directory, so we just return
   // something reasonable.
   return FilePath(kCurrentDirectoryString);
