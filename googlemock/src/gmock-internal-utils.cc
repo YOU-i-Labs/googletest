@@ -211,6 +211,8 @@ constexpr char UnBase64Impl(char c, const char* const base64, char carry) {
              : UnBase64Impl(c, base64 + 1, static_cast<char>(carry + 1));
 }
 
+#if GTEST_INTERNAL_CPLUSPLUS_LANG >= 201402L
+
 template <size_t... I>
 constexpr std::array<char, 256> UnBase64Impl(std::index_sequence<I...>,
                                              const char* const base64) {
@@ -225,6 +227,24 @@ constexpr std::array<char, 256> UnBase64(const char* const base64) {
 static constexpr char kBase64[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 static constexpr std::array<char, 256> kUnBase64 = UnBase64(kBase64);
+
+#else  // C++11 — relaxed constexpr not available; build table at startup.
+
+static const char kBase64[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+std::array<char, 256> MakeUnBase64Table() {
+  std::array<char, 256> table;
+  for (size_t i = 0; i < 256; ++i) {
+    table[i] = UnBase64Impl(UndoWebSafeEncoding(static_cast<char>(i)), kBase64,
+                            0);
+  }
+  return table;
+}
+
+static const std::array<char, 256> kUnBase64 = MakeUnBase64Table();
+
+#endif  // GTEST_INTERNAL_CPLUSPLUS_LANG >= 201402L
 
 bool Base64Unescape(const std::string& encoded, std::string* decoded) {
   decoded->clear();

@@ -1212,27 +1212,27 @@ class PairMatchBase {
   };
 };
 
-class Eq2Matcher : public PairMatchBase<Eq2Matcher, std::equal_to<>> {
+class Eq2Matcher : public PairMatchBase<Eq2Matcher, GtestAnyEq> {
  public:
   static const char* Desc() { return "an equal pair"; }
 };
-class Ne2Matcher : public PairMatchBase<Ne2Matcher, std::not_equal_to<>> {
+class Ne2Matcher : public PairMatchBase<Ne2Matcher, GtestAnyNe> {
  public:
   static const char* Desc() { return "an unequal pair"; }
 };
-class Lt2Matcher : public PairMatchBase<Lt2Matcher, std::less<>> {
+class Lt2Matcher : public PairMatchBase<Lt2Matcher, GtestAnyLt> {
  public:
   static const char* Desc() { return "a pair where the first < the second"; }
 };
-class Gt2Matcher : public PairMatchBase<Gt2Matcher, std::greater<>> {
+class Gt2Matcher : public PairMatchBase<Gt2Matcher, GtestAnyGt> {
  public:
   static const char* Desc() { return "a pair where the first > the second"; }
 };
-class Le2Matcher : public PairMatchBase<Le2Matcher, std::less_equal<>> {
+class Le2Matcher : public PairMatchBase<Le2Matcher, GtestAnyLe> {
  public:
   static const char* Desc() { return "a pair where the first <= the second"; }
 };
-class Ge2Matcher : public PairMatchBase<Ge2Matcher, std::greater_equal<>> {
+class Ge2Matcher : public PairMatchBase<Ge2Matcher, GtestAnyGe> {
  public:
   static const char* Desc() { return "a pair where the first >= the second"; }
 };

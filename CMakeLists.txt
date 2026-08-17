@@ -20,6 +20,12 @@ option(BUILD_GMOCK "Builds the googlemock subproject" ON)
 option(INSTALL_GTEST "Enable installation of googletest. (Projects embedding googletest may want to turn this OFF.)" ON)
 option(GTEST_HAS_ABSL "Use Abseil and RE2. Requires Abseil and RE2 to be separately added to the build." OFF)
 
+# Minimum C++ standard for GoogleTest targets (11 with polyfills, or 14 native).
+# On platforms that support it, prefer setting CMAKE_CXX_FLAGS to -std=c++1y or
+# -std=c++14 instead of relying on the C++11 polyfill layer.
+set(GTEST_CXX_STANDARD 11 CACHE STRING "Minimum C++ standard (11 or 14)")
+set_property(CACHE GTEST_CXX_STANDARD PROPERTY STRINGS 11 14)
+
 if(GTEST_HAS_ABSL)
   if(NOT TARGET absl::base)
     find_package(absl REQUIRED)

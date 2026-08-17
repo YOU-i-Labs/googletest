@@ -275,8 +275,15 @@
 #endif
 
 #if !defined(GTEST_INTERNAL_CPLUSPLUS_LANG) || \
-    GTEST_INTERNAL_CPLUSPLUS_LANG < 201402L
-#error C++ versions less than C++14 are not supported.
+    GTEST_INTERNAL_CPLUSPLUS_LANG < 201103L
+#error C++ versions less than C++11 are not supported.
+#endif
+
+// C++11/C++1y platforms: polyfill C++14 library features (make_unique,
+// index_sequence, *_t aliases).  Prefer -std=c++1y or -std=c++14 when the
+// toolchain supports it; this layer covers strict -std=c++11 builds.
+#if GTEST_INTERNAL_CPLUSPLUS_LANG < 201402L
+#include "gtest/internal/gtest-cpp11-compat.h"  // IWYU pragma: export
 #endif
 
 // MSVC >= 19.11 (VS 2017 Update 3) supports __has_include.

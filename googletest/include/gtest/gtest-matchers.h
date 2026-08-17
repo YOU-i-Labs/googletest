@@ -721,54 +721,70 @@ class ComparisonBase {
   Rhs rhs_;
 };
 
+#if GTEST_NEEDS_CPP11_POLYFILLS
+using GtestAnyEq = AnyEq;
+using GtestAnyNe = AnyNe;
+using GtestAnyLt = AnyLt;
+using GtestAnyGt = AnyGt;
+using GtestAnyLe = AnyLe;
+using GtestAnyGe = AnyGe;
+#else
+using GtestAnyEq = std::equal_to<>;
+using GtestAnyNe = std::not_equal_to<>;
+using GtestAnyLt = std::less<>;
+using GtestAnyGt = std::greater<>;
+using GtestAnyLe = std::less_equal<>;
+using GtestAnyGe = std::greater_equal<>;
+#endif
+
 template <typename Rhs>
-class EqMatcher : public ComparisonBase<EqMatcher<Rhs>, Rhs, std::equal_to<>> {
+class EqMatcher : public ComparisonBase<EqMatcher<Rhs>, Rhs, GtestAnyEq> {
  public:
   explicit EqMatcher(const Rhs& rhs)
-      : ComparisonBase<EqMatcher<Rhs>, Rhs, std::equal_to<>>(rhs) {}
+      : ComparisonBase<EqMatcher<Rhs>, Rhs, GtestAnyEq>(rhs) {}
   static const char* Desc() { return "is equal to"; }
   static const char* NegatedDesc() { return "isn't equal to"; }
 };
 template <typename Rhs>
 class NeMatcher
-    : public ComparisonBase<NeMatcher<Rhs>, Rhs, std::not_equal_to<>> {
+    : public ComparisonBase<NeMatcher<Rhs>, Rhs, GtestAnyNe> {
  public:
   explicit NeMatcher(const Rhs& rhs)
-      : ComparisonBase<NeMatcher<Rhs>, Rhs, std::not_equal_to<>>(rhs) {}
+      : ComparisonBase<NeMatcher<Rhs>, Rhs, GtestAnyNe>(rhs) {}
   static const char* Desc() { return "isn't equal to"; }
   static const char* NegatedDesc() { return "is equal to"; }
 };
 template <typename Rhs>
-class LtMatcher : public ComparisonBase<LtMatcher<Rhs>, Rhs, std::less<>> {
+class LtMatcher : public ComparisonBase<LtMatcher<Rhs>, Rhs, GtestAnyLt> {
  public:
   explicit LtMatcher(const Rhs& rhs)
-      : ComparisonBase<LtMatcher<Rhs>, Rhs, std::less<>>(rhs) {}
+      : ComparisonBase<LtMatcher<Rhs>, Rhs, GtestAnyLt>(rhs) {}
   static const char* Desc() { return "is <"; }
   static const char* NegatedDesc() { return "isn't <"; }
 };
 template <typename Rhs>
-class GtMatcher : public ComparisonBase<GtMatcher<Rhs>, Rhs, std::greater<>> {
+class GtMatcher : public ComparisonBase<GtMatcher<Rhs>, Rhs, GtestAnyGt> {
  public:
   explicit GtMatcher(const Rhs& rhs)
-      : ComparisonBase<GtMatcher<Rhs>, Rhs, std::greater<>>(rhs) {}
+      : ComparisonBase<GtMatcher<Rhs>, Rhs, GtestAnyGt>(rhs) {}
   static const char* Desc() { return "is >"; }
   static const char* NegatedDesc() { return "isn't >"; }
 };
 template <typename Rhs>
 class LeMatcher
-    : public ComparisonBase<LeMatcher<Rhs>, Rhs, std::less_equal<>> {
+    : public ComparisonBase<LeMatcher<Rhs>, Rhs, GtestAnyLe> {
  public:
   explicit LeMatcher(const Rhs& rhs)
-      : ComparisonBase<LeMatcher<Rhs>, Rhs, std::less_equal<>>(rhs) {}
+      : ComparisonBase<LeMatcher<Rhs>, Rhs, GtestAnyLe>(rhs) {}
   static const char* Desc() { return "is <="; }
   static const char* NegatedDesc() { return "isn't <="; }
 };
 template <typename Rhs>
 class GeMatcher
-    : public ComparisonBase<GeMatcher<Rhs>, Rhs, std::greater_equal<>> {
+    : public ComparisonBase<GeMatcher<Rhs>, Rhs, GtestAnyGe> {
  public:
   explicit GeMatcher(const Rhs& rhs)
-      : ComparisonBase<GeMatcher<Rhs>, Rhs, std::greater_equal<>>(rhs) {}
+      : ComparisonBase<GeMatcher<Rhs>, Rhs, GtestAnyGe>(rhs) {}
   static const char* Desc() { return "is >="; }
   static const char* NegatedDesc() { return "isn't >="; }
 };

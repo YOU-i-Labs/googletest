@@ -1790,7 +1790,9 @@ struct RethrowAction {
   std::exception_ptr exception;
   template <typename R, typename... Args>
   operator Action<R(Args...)>() const {  // NOLINT
-    return [ex = exception](Args...) -> R { std::rethrow_exception(ex); };
+    // C++11-compatible capture (init-capture requires C++14).
+    std::exception_ptr ex = exception;
+    return [ex](Args...) -> R { std::rethrow_exception(ex); };
   }
 };
 #endif  // GTEST_HAS_EXCEPTIONS

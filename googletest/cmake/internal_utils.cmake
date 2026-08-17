@@ -195,7 +195,12 @@ function(cxx_library_with_type name type cxx_flags)
     target_link_libraries(${name} PUBLIC Threads::Threads)
   endif()
 
-  target_compile_features(${name} PUBLIC cxx_std_14)
+  # Default to C++11 with polyfills (see gtest-cpp11-compat.h).  Prefer
+  # -std=c++1y or -std=c++14 on the compiler when available.
+  if(NOT DEFINED GTEST_CXX_STANDARD)
+    set(GTEST_CXX_STANDARD 11)
+  endif()
+  target_compile_features(${name} PUBLIC cxx_std_${GTEST_CXX_STANDARD})
 endfunction()
 
 ########################################################################
