@@ -24,15 +24,26 @@
 
 namespace std {
 
-// C++14 type aliases.
+// enable_if_t, decay_t, and make_unique may already be provided by YOU-i
+// YiPredefCXX11.h on C++11 platform builds; skip to avoid std redefinition.
+#ifndef _YI_PREDEF_CXX11_H_
+
 template <bool B, class T = void>
 using enable_if_t = typename enable_if<B, T>::type;
 
-template <bool B, class T, class F>
-using conditional_t = typename conditional<B, T, F>::type;
-
 template <typename T>
 using decay_t = typename decay<T>::type;
+
+template <typename T, typename... Args>
+unique_ptr<T> make_unique(Args&&... args) {
+  return unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
+#endif  // !_YI_PREDEF_CXX11_H_
+
+// C++14 type aliases not covered by YiPredefCXX11.h.
+template <bool B, class T, class F>
+using conditional_t = typename conditional<B, T, F>::type;
 
 template <typename T>
 using remove_cv_t = typename remove_cv<T>::type;
@@ -42,12 +53,6 @@ using remove_const_t = typename remove_const<T>::type;
 
 template <typename T>
 using remove_reference_t = typename remove_reference<T>::type;
-
-// C++14 std::make_unique (single-object form; array form omitted).
-template <typename T, typename... Args>
-unique_ptr<T> make_unique(Args&&... args) {
-  return unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
 
 // C++14 std::index_sequence and friends (backported from GoogleTest v1.12).
 template <size_t... Is>
