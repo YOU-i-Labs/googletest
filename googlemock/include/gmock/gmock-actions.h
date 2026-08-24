@@ -379,6 +379,17 @@ typename std::add_const<T>::type& as_const(T& t) {
   return t;
 }
 
+// C++11 libstdc++ hard-errors when std::is_convertible instantiates ill-formed
+// conversion paths (e.g. Action<F> to OnceAction<F>). Use SFINAE instead.
+template <typename From, typename To, typename = void>
+struct is_convertible_without_hard_error : std::false_type {};
+
+template <typename From, typename To>
+struct is_convertible_without_hard_error<From, To,
+                                         void_t<decltype(static_cast<To>(
+                                             std::declval<From>()))>>
+    : std::true_type {};
+
 }  // namespace internal
 
 // Specialized for function types below.
@@ -420,6 +431,15 @@ class OnceAction;
 //
 // A less-contrived example would be an action that returns an arbitrary type,
 // whose &&-qualified call operator is capable of dealing with move-only types.
+template <typename F>
+class Action;
+
+template <typename T>
+struct IsAction : std::false_type {};
+
+template <typename F>
+struct IsAction<Action<F>> : std::true_type {};
+
 template <typename Result, typename... Args>
 class OnceAction<Result(Args...)> final {
  private:
@@ -456,6 +476,8 @@ class OnceAction<Result(Args...)> final {
                     // traits above.
                     internal::negation<std::is_same<
                         OnceAction, typename std::decay<Callable>::type>>,
+                    internal::negation<
+                        IsAction<typename std::decay<Callable>::type>>,
                     IsDirectlyCompatible<Callable>>  //
                 ::value,
                 int>::type = 0>
@@ -473,6 +495,8 @@ class OnceAction<Result(Args...)> final {
                     // traits above.
                     internal::negation<std::is_same<
                         OnceAction, typename std::decay<Callable>::type>>,
+                    internal::negation<
+                        IsAction<typename std::decay<Callable>::type>>,
                     // Exclude callables for which the overload above works.
                     // We'd rather provide the arguments if possible.
                     internal::negation<IsDirectlyCompatible<Callable>>,
@@ -1507,7 +1531,8 @@ class DoAllAction<FinalAction> {
   // We support conversion to OnceAction whenever the sub-action does.
   template <typename R, typename... Args,
             typename std::enable_if<
-                std::is_convertible<FinalAction, OnceAction<R(Args...)>>::value,
+                internal::is_convertible_without_hard_error<
+                    FinalAction, OnceAction<R(Args...)>>::value,
                 int>::type = 0>
   operator OnceAction<R(Args...)>() && {  // NOLINT
     return std::move(final_action_);
@@ -1519,9 +1544,10 @@ class DoAllAction<FinalAction> {
       typename R, typename... Args,
       typename std::enable_if<
           conjunction<
-              negation<
-                  std::is_convertible<FinalAction, OnceAction<R(Args...)>>>,
-              std::is_convertible<FinalAction, Action<R(Args...)>>>::value,
+              negation<internal::is_convertible_without_hard_error<
+                  FinalAction, OnceAction<R(Args...)>>>,
+              internal::is_convertible_without_hard_error<
+                  FinalAction, Action<R(Args...)>>>::value,
           int>::type = 0>
   operator OnceAction<R(Args...)>() && {  // NOLINT
     return Action<R(Args...)>(std::move(final_action_));
@@ -1531,7 +1557,8 @@ class DoAllAction<FinalAction> {
   template <
       typename R, typename... Args,
       typename std::enable_if<
-          std::is_convertible<const FinalAction&, Action<R(Args...)>>::value,
+          internal::is_convertible_without_hard_error<
+              const FinalAction&, Action<R(Args...)>>::value,
           int>::type = 0>
   operator Action<R(Args...)>() const {  // NOLINT
     return final_action_;
@@ -1612,10 +1639,12 @@ class DoAllAction<InitialAction, OtherActions...>
   template <
       typename R, typename... Args,
       typename std::enable_if<
-          conjunction<std::is_convertible<
-                          InitialAction,
-                          OnceAction<void(InitialActionArgType<Args>...)>>,
-                      std::is_convertible<Base, OnceAction<R(Args...)>>>::value,
+          conjunction<
+              internal::is_convertible_without_hard_error<
+                  InitialAction,
+                  OnceAction<void(InitialActionArgType<Args>...)>>,
+              internal::is_convertible_without_hard_error<
+                  Base, OnceAction<R(Args...)>>>::value,
           int>::type = 0>
   operator OnceAction<R(Args...)>() && {  // NOLINT
     // Return an action that first calls the initial action with arguments
@@ -1648,12 +1677,14 @@ class DoAllAction<InitialAction, OtherActions...>
       typename R, typename... Args,
       typename std::enable_if<
           conjunction<
-              negation<std::is_convertible<
+              negation<internal::is_convertible_without_hard_error<
                   InitialAction,
                   OnceAction<void(InitialActionArgType<Args>...)>>>,
-              std::is_convertible<InitialAction,
-                                  Action<void(InitialActionArgType<Args>...)>>,
-              std::is_convertible<Base, OnceAction<R(Args...)>>>::value,
+              internal::is_convertible_without_hard_error<
+                  InitialAction,
+                  Action<void(InitialActionArgType<Args>...)>>,
+              internal::is_convertible_without_hard_error<
+                  Base, OnceAction<R(Args...)>>>::value,
           int>::type = 0>
   operator OnceAction<R(Args...)>() && {  // NOLINT
     return DoAll(
