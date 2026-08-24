@@ -968,6 +968,17 @@ class ReturnAction final {
     U operator()() && { return std::move(state_->value); }
     U operator()() const& { return state_->value; }
 
+    // GMock 1.16 OnceAction checks callability with the mock's argument types.
+    // Legacy Return() actions only exposed nullary call operators.
+    template <typename... Args>
+    U operator()(Args&&...) && {
+      return std::move(state_->value);
+    }
+    template <typename... Args>
+    U operator()(Args&&...) const& {
+      return state_->value;
+    }
+
    private:
     // We put our state on the heap so that the compiler-generated copy/move
     // constructors work correctly even when U is a reference-like type. This is
