@@ -447,6 +447,12 @@ class OnceAction<Result(Args...)> final {
   // via StdFunctionAdaptor.
   template <typename Callable>
   using IsDirectlyCompatible = internal::conjunction<
+      // Prefer legacy gmock action conversion operators (Return, DoAll, etc.)
+      // over treating them as direct callables. Checking convertibility first
+      // also avoids C++11 libstdc++ hard errors from is_callable_r when F is
+      // not directly invocable (e.g. ReturnAction).
+      internal::negation<internal::is_convertible_without_hard_error<
+          typename std::decay<Callable>::type, OnceAction<Result(Args...)>>>,
       // It must be possible to capture the callable in StdFunctionAdaptor.
       std::is_constructible<typename std::decay<Callable>::type, Callable>,
       // The callable must be compatible with our signature.
@@ -457,6 +463,11 @@ class OnceAction<Result(Args...)> final {
   // ignore incoming arguments.
   template <typename Callable>
   using IsCompatibleAfterIgnoringArguments = internal::conjunction<
+      // Same as above: legacy actions convert via operator Action/OnceAction.
+      internal::negation<internal::is_convertible_without_hard_error<
+          typename std::decay<Callable>::type, OnceAction<Result(Args...)>>>,
+      internal::negation<internal::is_convertible_without_hard_error<
+          typename std::decay<Callable>::type, Action<Result(Args...)>>>,
       // It must be possible to capture the callable in a lambda.
       std::is_constructible<typename std::decay<Callable>::type, Callable>,
       // The callable must be invocable with zero arguments, returning something
@@ -980,13 +991,6 @@ class ReturnAction final {
                 std::is_copy_constructible<U>>::value>::type>
   operator Action<U(Args...)>() const {  // NOLINT
     return Impl<U>(value_);
-  }
-
-  // GMock 1.16 OnceAction SFINAE checks callability of ReturnAction itself
-  // before conversion to OnceAction/Action (Impl already has variadic ops).
-  template <typename... Args>
-  const R& operator()(Args&&...) const {
-    return value_;
   }
 
  private:
@@ -1542,14 +1546,6 @@ struct WithArgsAction {
       return converted.Perform(std::forward_as_tuple(
           std::get<I>(std::forward_as_tuple(std::forward<Args>(args)...))...));
     };
-  }
-
-  // GMock 1.16 OnceAction SFINAE checks callability of WithArgsAction itself.
-  template <typename... Args>
-  auto operator()(Args&&... args) const -> decltype(inner_action(
-      std::get<I>(std::forward_as_tuple(std::forward<Args>(args)...))...)) {
-    return inner_action(std::get<I>(
-        std::forward_as_tuple(std::forward<Args>(args)...))...);
   }
 };
 
