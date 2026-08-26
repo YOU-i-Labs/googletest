@@ -476,6 +476,9 @@ struct is_compatible_as_once_action_source
 
 // Return/DoAll/WithArgs use conversion operators; SaveArg-style actions use
 // direct OnceAction construction instead.
+template <typename Impl>
+class PolymorphicAction;
+
 template <typename T>
 struct HasGmockActionConversion : std::false_type {};
 
@@ -491,6 +494,9 @@ struct HasGmockActionConversion<WithArgsAction<InnerAction, I...>>
 
 template <typename A>
 struct HasGmockActionConversion<IgnoreResultAction<A>> : std::true_type {};
+
+template <typename Impl>
+struct HasGmockActionConversion<PolymorphicAction<Impl>> : std::true_type {};
 
 }  // namespace internal
 
@@ -954,13 +960,6 @@ template <typename Impl>
 class PolymorphicAction {
  public:
   explicit PolymorphicAction(const Impl& impl) : impl_(impl) {}
-
-  // GMock 1.16 OnceAction may invoke polymorphic actions directly during SFINAE.
-  template <typename... Args>
-  auto operator()(Args&&... args) const
-      -> decltype(impl_(std::forward<Args>(args)...)) {
-    return impl_(std::forward<Args>(args)...);
-  }
 
   template <typename F>
   operator Action<F>() const {
@@ -1669,7 +1668,7 @@ class DoAllAction<FinalAction> {
               const FinalAction&, Action<R(Args...)>>::value,
           int>::type = 0>
   operator Action<R(Args...)>() const {  // NOLINT
-    return final_action_;
+    return Action<R(Args...)>(final_action_);
   }
 
  private:
