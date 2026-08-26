@@ -893,6 +893,13 @@ class PolymorphicAction {
  public:
   explicit PolymorphicAction(const Impl& impl) : impl_(impl) {}
 
+  // GMock 1.16 OnceAction may invoke polymorphic actions directly during SFINAE.
+  template <typename... Args>
+  auto operator()(Args&&... args) const
+      -> decltype(impl_(std::forward<Args>(args)...)) {
+    return impl_(std::forward<Args>(args)...);
+  }
+
   template <typename F>
   operator Action<F>() const {
     return Action<F>(new MonomorphicImpl<F>(impl_));
@@ -1162,6 +1169,12 @@ class ReturnNullAction {
   static Result Perform(const ArgumentTuple&) {
     return nullptr;
   }
+
+  // GMock 1.16 OnceAction checks callability with the mock's argument types.
+  template <typename... Args>
+  std::nullptr_t operator()(Args&&...) const {
+    return nullptr;
+  }
 };
 
 // Implements the Return() action.
@@ -1172,6 +1185,10 @@ class ReturnVoidAction {
   static void Perform(const ArgumentTuple&) {
     static_assert(std::is_void<Result>::value, "Result should be void.");
   }
+
+  // GMock 1.16 OnceAction checks callability with the mock's argument types.
+  template <typename... Args>
+  void operator()(Args&&...) const {}
 };
 
 // Implements the polymorphic ReturnRef(x) action, which can be used
@@ -1182,6 +1199,12 @@ class ReturnRefAction {
  public:
   // Constructs a ReturnRefAction object from the reference to be returned.
   explicit ReturnRefAction(T& ref) : ref_(ref) {}  // NOLINT
+
+  // GMock 1.16 OnceAction checks callability with the mock's argument types.
+  template <typename... Args>
+  T& operator()(Args&&...) const {
+    return ref_;
+  }
 
   // This template type conversion operator allows ReturnRef(x) to be
   // used in ANY function that returns a reference to x's type.
@@ -1224,6 +1247,12 @@ class ReturnRefOfCopyAction {
   // Constructs a ReturnRefOfCopyAction object from the reference to
   // be returned.
   explicit ReturnRefOfCopyAction(const T& value) : value_(value) {}  // NOLINT
+
+  // GMock 1.16 OnceAction checks callability with the mock's argument types.
+  template <typename... Args>
+  const T& operator()(Args&&...) const {
+    return value_;
+  }
 
   // This template type conversion operator allows ReturnRefOfCopy(x) to be
   // used in ANY function that returns a reference to x's type.
