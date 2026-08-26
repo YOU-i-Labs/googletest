@@ -69,11 +69,19 @@ macro(config_compiler_and_linker)
     endif()
   endif()
 
+  if (NOT YI_DISABLE_WERROR)
+    set(_WERROR_FLAG "-Werror")
+    set(_MSVC_WX_FLAG "-WX")
+  else()
+    set(_WERROR_FLAG "")
+    set(_MSVC_WX_FLAG "")
+  endif()
+
   fix_default_compiler_settings_()
   if (MSVC)
     # Newlines inside flags variables break CMake's NMake generator.
     # TODO(vladl@google.com): Add -RTCs and -RTCu to debug builds.
-    set(cxx_base_flags "-GS -W4 -WX -wd4251 -wd4275 -nologo -J")
+    set(cxx_base_flags "-GS -W4 ${_MSVC_WX_FLAG} -wd4251 -wd4275 -wd4447 -nologo -J")
     set(cxx_base_flags "${cxx_base_flags} -D_UNICODE -DUNICODE -DWIN32 -D_WIN32")
     set(cxx_base_flags "${cxx_base_flags} -DSTRICT -DWIN32_LEAN_AND_MEAN")
     set(cxx_exception_flags "-EHsc -D_HAS_EXCEPTIONS=1")
@@ -91,7 +99,7 @@ macro(config_compiler_and_linker)
     endif()
   elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
       CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
-    set(cxx_base_flags "-Wall -Wshadow -Wconversion -Wundef")
+    set(cxx_base_flags "-Wall -Wshadow -Wconversion -Wundef ${_WERROR_FLAG}")
     set(cxx_exception_flags "-fexceptions")
     set(cxx_no_exception_flags "-fno-exceptions")
     set(cxx_strict_flags "-W -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch -Wunused-parameter -Wcast-align -Winline -Wredundant-decls")
@@ -103,7 +111,7 @@ macro(config_compiler_and_linker)
       set(cxx_base_flags "${cxx_base_flags} -Wno-implicit-float-size-conversion -ffp-model=precise")
     endif()
   elseif (CMAKE_COMPILER_IS_GNUCXX)
-    set(cxx_base_flags "-Wall -Wshadow -Wundef")
+    set(cxx_base_flags "-Wall -Wshadow -Wundef ${_WERROR_FLAG}")
     if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0.0)
       set(cxx_base_flags "${cxx_base_flags} -Wno-error=dangling-else")
     endif()
@@ -167,6 +175,7 @@ function(cxx_library_with_type name type cxx_flags)
   set_target_properties(${name}
     PROPERTIES
     COMPILE_FLAGS "${cxx_flags}")
+  if(NOT IOS AND NOT TVOS)  # Fix multiarch build
   # Set the output directory for build artifacts.
   set_target_properties(${name}
     PROPERTIES
@@ -175,6 +184,7 @@ function(cxx_library_with_type name type cxx_flags)
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
     PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
     COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+  endif()
   # Make PDBs match library name.
   get_target_property(pdb_debug_postfix ${name} DEBUG_POSTFIX)
   set_target_properties(${name}
