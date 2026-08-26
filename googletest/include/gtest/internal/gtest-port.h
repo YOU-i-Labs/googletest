@@ -284,6 +284,12 @@
 // toolchain supports it; this layer covers strict -std=c++11 builds.
 #if GTEST_INTERNAL_CPLUSPLUS_LANG < 201402L
 #include "gtest/internal/gtest-cpp11-compat.h"  // IWYU pragma: export
+#else
+// C++14+ builds skip gtest-cpp11-compat.h; define the flag so
+// gtest-matchers.h #if GTEST_NEEDS_CPP11_POLYFILLS is valid under -Wundef.
+#ifndef GTEST_NEEDS_CPP11_POLYFILLS
+#define GTEST_NEEDS_CPP11_POLYFILLS 0
+#endif
 #endif
 
 // MSVC >= 19.11 (VS 2017 Update 3) supports __has_include.
