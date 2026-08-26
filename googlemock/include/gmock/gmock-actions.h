@@ -982,6 +982,18 @@ class ReturnAction final {
     return Impl<U>(value_);
   }
 
+  // GMock 1.16 OnceAction SFINAE checks callability of ReturnAction itself
+  // before conversion to OnceAction/Action (Impl already has variadic ops).
+  template <typename... Args>
+  const R& operator()(Args&&...) const {
+    return value_;
+  }
+
+  template <typename... Args>
+  R operator()(Args&&...) && {
+    return std::move(value_);
+  }
+
  private:
   // Implements the Return(x) action for a mock function that returns type U.
   template <typename U>
@@ -1535,6 +1547,21 @@ struct WithArgsAction {
       return converted.Perform(std::forward_as_tuple(
           std::get<I>(std::forward_as_tuple(std::forward<Args>(args)...))...));
     };
+  }
+
+  // GMock 1.16 OnceAction SFINAE checks callability of WithArgsAction itself.
+  template <typename... Args>
+  auto operator()(Args&&... args) const -> decltype(inner_action(
+      std::get<I>(std::forward_as_tuple(std::forward<Args>(args)...))...)) {
+    return inner_action(std::get<I>(
+        std::forward_as_tuple(std::forward<Args>(args)...))...);
+  }
+
+  template <typename... Args>
+  auto operator()(Args&&... args) && -> decltype(std::move(inner_action)(
+      std::get<I>(std::forward_as_tuple(std::forward<Args>(args)...))...)) {
+    return std::move(inner_action)(std::get<I>(
+        std::forward_as_tuple(std::forward<Args>(args)...))...);
   }
 };
 
