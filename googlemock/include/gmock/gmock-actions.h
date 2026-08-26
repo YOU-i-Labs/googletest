@@ -989,11 +989,6 @@ class ReturnAction final {
     return value_;
   }
 
-  template <typename... Args>
-  R operator()(Args&&...) && {
-    return std::move(value_);
-  }
-
  private:
   // Implements the Return(x) action for a mock function that returns type U.
   template <typename U>
@@ -1554,13 +1549,6 @@ struct WithArgsAction {
   auto operator()(Args&&... args) const -> decltype(inner_action(
       std::get<I>(std::forward_as_tuple(std::forward<Args>(args)...))...)) {
     return inner_action(std::get<I>(
-        std::forward_as_tuple(std::forward<Args>(args)...))...);
-  }
-
-  template <typename... Args>
-  auto operator()(Args&&... args) && -> decltype(std::move(inner_action)(
-      std::get<I>(std::forward_as_tuple(std::forward<Args>(args)...))...)) {
-    return std::move(inner_action)(std::get<I>(
         std::forward_as_tuple(std::forward<Args>(args)...))...);
   }
 };
