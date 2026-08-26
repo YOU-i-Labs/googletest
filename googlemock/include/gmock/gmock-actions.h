@@ -431,6 +431,9 @@ struct IsAction : std::false_type {};
 template <typename F>
 struct IsAction<Action<F>> : std::true_type {};
 
+template <typename Impl>
+class PolymorphicAction;
+
 namespace internal {
 
 // --- C++11 OnceAction compatibility (GMock 1.16 targets C++14 upstream) ---
@@ -476,9 +479,6 @@ struct is_compatible_as_once_action_source
 
 // Return/DoAll/WithArgs use conversion operators; SaveArg-style actions use
 // direct OnceAction construction instead.
-template <typename Impl>
-class PolymorphicAction;
-
 template <typename T>
 struct HasGmockActionConversion : std::false_type {};
 
