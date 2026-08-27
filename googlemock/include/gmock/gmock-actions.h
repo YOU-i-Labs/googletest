@@ -716,6 +716,46 @@ OnceAction<Result(Args...)> MakeOnceActionFromCallable(Callable&& callable) {
       std::forward<Callable>(callable));
 }
 
+// Legacy gmock sub-actions (Return, DoAll, ACTION(), etc.) expose templated
+// conversion operators and must not go through Action(G&&) on C++11 GCC.
+template <typename F, typename Subaction>
+Action<F> MakeActionFromSubactionImpl(Subaction&& subaction, std::true_type) {
+  return static_cast<Action<F>>(std::forward<Subaction>(subaction));
+}
+
+template <typename F, typename Subaction>
+Action<F> MakeActionFromSubactionImpl(Subaction&& subaction, std::false_type) {
+  return Action<F>(std::forward<Subaction>(subaction));
+}
+
+template <typename F, typename Subaction>
+Action<F> MakeActionFromSubaction(Subaction&& subaction) {
+  return MakeActionFromSubactionImpl<F>(
+      std::forward<Subaction>(subaction),
+      HasGmockActionConversion<
+          typename std::decay<Subaction>::type>{});
+}
+
+template <typename F, typename Subaction>
+OnceAction<F> MakeOnceActionFromSubactionImpl(Subaction&& subaction,
+                                                std::true_type) {
+  return static_cast<OnceAction<F>>(std::forward<Subaction>(subaction));
+}
+
+template <typename F, typename Subaction>
+OnceAction<F> MakeOnceActionFromSubactionImpl(Subaction&& subaction,
+                                                std::false_type) {
+  return MakeOnceActionFromCallable<F>(std::forward<Subaction>(subaction));
+}
+
+template <typename F, typename Subaction>
+OnceAction<F> MakeOnceActionFromSubaction(Subaction&& subaction) {
+  return MakeOnceActionFromSubactionImpl<F>(
+      std::forward<Subaction>(subaction),
+      HasGmockActionConversion<
+          typename std::decay<Subaction>::type>{});
+}
+
 }  // namespace internal
 
 // When an unexpected function call is encountered, Google Mock will
@@ -1685,47 +1725,44 @@ struct WithArgsAction {
   template <
       typename R, typename... Args,
       typename std::enable_if<
-          internal::is_compatible_as_once_action_source<
+          internal::is_compatible_as_subaction_source<
               InnerAction,
               // Unfortunately we can't use the InnerSignature alias here; MSVC
               // complains about the I parameter pack not being expanded (error
               // C3520) despite it being expanded in the type alias. TupleElement
               // is also an MSVC workaround. See its definition for details.
-              OnceAction<R(internal::TupleElement<
-                           I, std::tuple<Args...>>...)>>::value,
+              OnceAction<InnerSignature<R, Args...>>>::value,
           int>::type = 0>
   operator OnceAction<R(Args...)>() && {  // NOLINT
-    using InnerOnceAction = OnceAction<InnerSignature<R, Args...>>;
-
     struct OA {
-      InnerOnceAction inner_action;
+      OnceAction<InnerSignature<R, Args...>> inner_action;
 
-      R operator()(Args&&... args) {
+      R operator()(Args&&... args) && {
         return std::move(inner_action)
             .Call(std::get<I>(
                 std::forward_as_tuple(std::forward<Args>(args)...))...);
       }
     };
 
-    return internal::MakeOnceActionFromCallable<R, Args...>(OA{
-        Action<InnerSignature<R, Args...>>(std::move(inner_action))
-            .operator InnerOnceAction()});
+    return internal::MakeOnceActionFromCallable<R, Args...>(
+        OA{std::move(inner_action)});
   }
 
   template <
       typename R, typename... Args,
       typename std::enable_if<
-          internal::is_compatible_as_once_action_source<
+          internal::is_compatible_as_subaction_source<
               const InnerAction&,
               // Unfortunately we can't use the InnerSignature alias here; MSVC
               // complains about the I parameter pack not being expanded (error
               // C3520) despite it being expanded in the type alias. TupleElement
               // is also an MSVC workaround. See its definition for details.
-              Action<R(internal::TupleElement<
-                       I, std::tuple<Args...>>...)>>::value,
+              Action<InnerSignature<R, Args...>>>::value,
           int>::type = 0>
   operator Action<R(Args...)>() const {  // NOLINT
-    Action<InnerSignature<R, Args...>> converted(inner_action);
+    Action<InnerSignature<R, Args...>> converted =
+        internal::MakeActionFromSubaction<InnerSignature<R, Args...>>(
+            inner_action);
 
     return [converted](Args&&... args) -> R {
       return converted.Perform(std::forward_as_tuple(
@@ -1798,8 +1835,9 @@ class DoAllAction<FinalAction> {
                       FinalAction, Action<R(Args...)>>>>::value,
           int>::type = 0>
   operator OnceAction<R(Args...)>() && {  // NOLINT
-    return Action<R(Args...)>(std::move(final_action_))
-        .operator OnceAction<R(Args...)>();
+    return static_cast<OnceAction<R(Args...)>>(
+        internal::MakeActionFromSubaction<R(Args...)>(
+            std::move(final_action_)));
   }
 
   // We support conversion to Action whenever the sub-action does.
@@ -1810,7 +1848,7 @@ class DoAllAction<FinalAction> {
               const FinalAction&, Action<R(Args...)>>::value,
           int>::type = 0>
   operator Action<R(Args...)>() const {  // NOLINT
-    return Action<R(Args...)>(final_action_);
+    return internal::MakeActionFromSubaction<R(Args...)>(final_action_);
   }
 
  private:
@@ -1894,14 +1932,11 @@ class DoAllAction<InitialAction, OtherActions...>
               OnceAction<void(InitialActionArgType<Args>...)>>::value,
           int>::type = 0>
   operator OnceAction<R(Args...)>() && {  // NOLINT
-    using InitialOnceAction =
-        OnceAction<void(InitialActionArgType<Args>...)>;
-
     struct OA {
-      InitialOnceAction initial_action;
+      OnceAction<void(InitialActionArgType<Args>...)> initial_action;
       OnceAction<R(Args...)> remaining_actions;
 
-      R operator()(Args... args) {
+      R operator()(Args... args) && {
         std::move(initial_action)
             .Call(static_cast<InitialActionArgType<Args>>(args)...);
 
@@ -1910,9 +1945,8 @@ class DoAllAction<InitialAction, OtherActions...>
     };
 
     return internal::MakeOnceActionFromCallable<R, Args...>(OA{
-        Action<void(InitialActionArgType<Args>...)>(std::move(initial_action_))
-            .operator InitialOnceAction(),
-        std::move(static_cast<Base&>(*this)).operator OnceAction<R(Args...)>(),
+        std::move(initial_action_),
+        std::move(static_cast<Base&>(*this)),
     });
   }
 
@@ -1935,20 +1969,38 @@ class DoAllAction<InitialAction, OtherActions...>
                   Base, OnceAction<R(Args...)>>>::value,
           int>::type = 0>
   operator OnceAction<R(Args...)>() && {  // NOLINT
-    return DoAll(
-        Action<void(InitialActionArgType<Args>...)>(std::move(initial_action_)),
-        std::move(static_cast<Base&>(*this)));
+    struct OA {
+      Action<void(InitialActionArgType<Args>...)> initial_action;
+      OnceAction<R(Args...)> remaining_actions;
+
+      R operator()(Args... args) && {
+        initial_action.Perform(std::forward_as_tuple(
+            static_cast<InitialActionArgType<Args>>(args)...));
+
+        return std::move(remaining_actions).Call(std::forward<Args>(args)...);
+      }
+    };
+
+    return internal::MakeOnceActionFromCallable<R, Args...>(OA{
+        internal::MakeActionFromSubaction<
+            void(InitialActionArgType<Args>...)>(std::move(initial_action_)),
+        std::move(static_cast<Base&>(*this)),
+    });
   }
 
   // We support conversion to Action whenever both the initial action and the
-  // rest support conversion to Action. Always route sub-actions through
-  // explicit Action construction so ACTION()/Return/DoAll functors work on
-  // C++11 GCC where is_compatible_as_once_action_source alone is insufficient.
-  template <typename R, typename... Args>
+  // rest support conversion to Action.
+  template <
+      typename R, typename... Args,
+      typename std::enable_if<
+          conjunction<
+              internal::is_compatible_as_subaction_source<
+                  const InitialAction&,
+                  Action<void(InitialActionArgType<Args>...)>>,
+              internal::is_compatible_as_subaction_source<
+                  const Base&, Action<R(Args...)>>>::value,
+          int>::type = 0>
   operator Action<R(Args...)>() const {  // NOLINT
-    // Return an action that first calls the initial action with arguments
-    // filtered through InitialActionArgType, then forwards arguments directly
-    // to the base class to deal with the remaining actions.
     struct OA {
       Action<void(InitialActionArgType<Args>...)> initial_action;
       Action<R(Args...)> remaining_actions;
@@ -1962,10 +2014,12 @@ class DoAllAction<InitialAction, OtherActions...>
       }
     };
 
-    return OA{
-        Action<void(InitialActionArgType<Args>...)>(initial_action_),
-        Action<R(Args...)>(static_cast<const Base&>(*this)),
-    };
+    return internal::MakeActionFromSubaction<R(Args...)>(OA{
+        internal::MakeActionFromSubaction<
+            void(InitialActionArgType<Args>...)>(initial_action_),
+        internal::MakeActionFromSubaction<R(Args...)>(
+            static_cast<const Base&>(*this)),
+    });
   }
 
  private:

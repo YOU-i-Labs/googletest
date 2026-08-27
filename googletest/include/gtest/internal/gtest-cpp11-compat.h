@@ -34,9 +34,19 @@ using enable_if_t = typename enable_if<B, T>::type;
 template <typename T>
 using decay_t = typename decay<T>::type;
 
+// Non-array objects (C++14 make_unique).
 template <typename T, typename... Args>
-unique_ptr<T> make_unique(Args&&... args) {
+typename enable_if<!is_array<T>::value, unique_ptr<T>>::type make_unique(
+    Args&&... args) {
   return unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
+// Unbounded arrays: make_unique<T[]>(size).
+template <typename T>
+typename enable_if<is_array<T>::value && extent<T>::value == 0,
+                   unique_ptr<T>>::type make_unique(size_t size) {
+  typedef typename remove_extent<T>::type element_type;
+  return unique_ptr<T>(new element_type[size]());
 }
 
 #endif  // !_YI_PREDEF_CXX11_H_
