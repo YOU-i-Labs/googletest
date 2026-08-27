@@ -1077,7 +1077,18 @@ class ReturnAction final {
                 std::is_convertible<R, U>,        //
                 std::is_move_constructible<U>>::value>::type>
   operator OnceAction<U(Args...)>() && {  // NOLINT
-    return OnceAction<U(Args...)>(Impl<U>(std::move(value_)));
+    // Wrap Impl in a plain callable for OnceAction construction. On C++11,
+    // OnceAction cannot be built directly from Impl (ref-qualified operators
+    // and HasGmockActionConversion SFINAE); mirror Action::operator OnceAction.
+    struct OA {
+      Impl<U> impl;
+
+      U operator()(Args... args) && {
+        return std::move(impl)(std::forward<Args>(args)...);
+      }
+    };
+
+    return OnceAction<U(Args...)>(OA{Impl<U>(std::move(value_))});
   }
 
   template <typename U, typename... Args,
