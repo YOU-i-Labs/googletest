@@ -1731,7 +1731,8 @@ struct WithArgsAction {
               // complains about the I parameter pack not being expanded (error
               // C3520) despite it being expanded in the type alias. TupleElement
               // is also an MSVC workaround. See its definition for details.
-              OnceAction<InnerSignature<R, Args...>>>::value,
+              OnceAction<R(internal::TupleElement<
+                           I, std::tuple<Args...>>...)>>::value,
           int>::type = 0>
   operator OnceAction<R(Args...)>() && {  // NOLINT
     struct OA {
@@ -1757,7 +1758,8 @@ struct WithArgsAction {
               // complains about the I parameter pack not being expanded (error
               // C3520) despite it being expanded in the type alias. TupleElement
               // is also an MSVC workaround. See its definition for details.
-              Action<InnerSignature<R, Args...>>>::value,
+              Action<R(internal::TupleElement<
+                       I, std::tuple<Args...>>...)>>::value,
           int>::type = 0>
   operator Action<R(Args...)>() const {  // NOLINT
     Action<InnerSignature<R, Args...>> converted =
