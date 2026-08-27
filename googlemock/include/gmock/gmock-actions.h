@@ -521,6 +521,15 @@ struct is_compatible_as_once_action_source
     : disjunction<is_convertible_without_hard_error<From, To>,
                   is_constructible_without_hard_error<From, To>> {};
 
+// Sub-actions that expose operator Action<F>() (Return, DoAll, WithArgs, etc.)
+// must convert via explicit Action construction on C++11 GCC; they are not
+// always picked up by is_compatible_as_once_action_source alone.
+template <typename From, typename To>
+struct is_compatible_as_subaction_source
+    : disjunction<
+          is_compatible_as_once_action_source<From, To>,
+          HasGmockActionConversion<typename std::decay<From>::type>> {};
+
 // Construct OnceAction from a callable without public-constructor SFINAE.
 // Used by internal action conversion operators on C++11 toolchains.
 template <typename Result, typename... Args, typename Callable>
@@ -1797,7 +1806,7 @@ class DoAllAction<FinalAction> {
   template <
       typename R, typename... Args,
       typename std::enable_if<
-          internal::is_compatible_as_once_action_source<
+          internal::is_compatible_as_subaction_source<
               const FinalAction&, Action<R(Args...)>>::value,
           int>::type = 0>
   operator Action<R(Args...)>() const {  // NOLINT
@@ -1919,10 +1928,10 @@ class DoAllAction<InitialAction, OtherActions...>
               negation<internal::is_compatible_as_once_action_source<
                   InitialAction,
                   OnceAction<void(InitialActionArgType<Args>...)>>>,
-              internal::is_compatible_as_once_action_source<
+              internal::is_compatible_as_subaction_source<
                   InitialAction,
                   Action<void(InitialActionArgType<Args>...)>>,
-              internal::is_compatible_as_once_action_source<
+              internal::is_compatible_as_subaction_source<
                   Base, OnceAction<R(Args...)>>>::value,
           int>::type = 0>
   operator OnceAction<R(Args...)>() && {  // NOLINT
@@ -1932,17 +1941,10 @@ class DoAllAction<InitialAction, OtherActions...>
   }
 
   // We support conversion to Action whenever both the initial action and the
-  // rest support conversion to Action.
-  template <
-      typename R, typename... Args,
-      typename std::enable_if<
-          conjunction<
-              internal::is_compatible_as_once_action_source<
-                  const InitialAction&,
-                  Action<void(InitialActionArgType<Args>...)>>,
-              internal::is_compatible_as_once_action_source<
-                  const Base&, Action<R(Args...)>>>::value,
-          int>::type = 0>
+  // rest support conversion to Action. Always route sub-actions through
+  // explicit Action construction so ACTION()/Return/DoAll functors work on
+  // C++11 GCC where is_compatible_as_once_action_source alone is insufficient.
+  template <typename R, typename... Args>
   operator Action<R(Args...)>() const {  // NOLINT
     // Return an action that first calls the initial action with arguments
     // filtered through InitialActionArgType, then forwards arguments directly
@@ -1961,8 +1963,8 @@ class DoAllAction<InitialAction, OtherActions...>
     };
 
     return OA{
-        initial_action_,
-        static_cast<const Base&>(*this),
+        Action<void(InitialActionArgType<Args>...)>(initial_action_),
+        Action<R(Args...)>(static_cast<const Base&>(*this)),
     };
   }
 
