@@ -1745,8 +1745,13 @@ struct WithArgsAction {
       }
     };
 
+    using InnerSig = InnerSignature<R, Args...>;
+    Action<InnerSig> inner_as_action =
+        internal::MakeActionFromSubaction<InnerSig>(std::move(inner_action));
+    OnceAction<InnerSig> inner_as_once = inner_as_action;
+
     return internal::MakeOnceActionFromCallable<R, Args...>(
-        OA{std::move(inner_action)});
+        OA{std::move(inner_as_once)});
   }
 
   template <
