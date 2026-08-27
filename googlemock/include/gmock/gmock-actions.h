@@ -372,8 +372,30 @@ struct is_callable_r_impl<
 
 // Like std::is_invocable_r from C++17, but works only for objects with call
 // operators. See the note on call_result_t.
+// GCC 4.8 / C++11: also probe ref-qualified operator()&& (declval<F>() is not
+// always enough in unevaluated contexts).
+template <typename Void, typename R, typename F, typename... Args>
+struct is_callable_r_rvalue_impl : std::false_type {};
+
 template <typename R, typename F, typename... Args>
-using is_callable_r = is_callable_r_impl<void, R, F, Args...>;
+struct is_callable_r_rvalue_impl<
+    void_t<decltype(std::declval<typename std::add_rvalue_reference<
+                      typename std::remove_reference<F>::type>::type>()(
+        std::declval<Args>()...))>,
+    R, F, Args...>
+    : std::conditional<
+          std::is_void<R>::value,  //
+          std::true_type,          //
+          is_implicitly_convertible<
+              decltype(std::declval<typename std::add_rvalue_reference<
+                           typename std::remove_reference<F>::type>::type>()(
+                  std::declval<Args>()...)),
+              R>>::type {};
+
+template <typename R, typename F, typename... Args>
+using is_callable_r =
+    disjunction<is_callable_r_impl<void, R, F, Args...>,
+                is_callable_r_rvalue_impl<void, R, F, Args...>>;
 
 // Like std::as_const from C++17.
 template <typename T>
@@ -466,17 +488,6 @@ struct is_convertible_without_hard_error<
 template <typename From, typename To, typename = void>
 struct is_constructible_without_hard_error : std::false_type {};
 
-template <typename From, typename To>
-struct is_constructible_without_hard_error<From, To,
-                                           void_t<decltype(To(
-                                               std::declval<From>()))>>
-    : std::true_type {};
-
-template <typename From, typename To>
-struct is_compatible_as_once_action_source
-    : disjunction<is_convertible_without_hard_error<From, To>,
-                  is_constructible_without_hard_error<From, To>> {};
-
 // Return/DoAll/WithArgs/ACTION() use conversion operators; SaveArg-style actions use
 // direct OnceAction construction instead.
 template <typename T, typename = void>
@@ -498,10 +509,31 @@ struct HasGmockActionConversion<IgnoreResultAction<A>> : std::true_type {};
 template <typename Impl>
 struct HasGmockActionConversion<PolymorphicAction<Impl>> : std::true_type {};
 
+template <typename From, typename To>
+struct is_constructible_without_hard_error<
+    From, To,
+    typename std::enable_if<
+        !HasGmockActionConversion<typename std::decay<From>::type>::value,
+        void_t<decltype(To(std::declval<From>()))>>::type> : std::true_type {};
+
+template <typename From, typename To>
+struct is_compatible_as_once_action_source
+    : disjunction<is_convertible_without_hard_error<From, To>,
+                  is_constructible_without_hard_error<From, To>> {};
+
+// Construct OnceAction from a callable without public-constructor SFINAE.
+// Used by internal action conversion operators on C++11 toolchains.
+template <typename Result, typename... Args, typename Callable>
+OnceAction<Result(Args...)> MakeOnceActionFromCallable(Callable&& callable);
+
 }  // namespace internal
 
 template <typename Result, typename... Args>
 class OnceAction<Result(Args...)> final {
+  template <typename ResultIn, typename... ArgsIn, typename CallableIn>
+  friend OnceAction<ResultIn(ArgsIn...)> internal::MakeOnceActionFromCallable(
+      CallableIn&& callable);
+
  private:
   // True iff we can use the given callable type (or lvalue reference) directly
   // via StdFunctionAdaptor.
@@ -588,7 +620,22 @@ class OnceAction<Result(Args...)> final {
     return function_(std::forward<Args>(args)...);
   }
 
+  // Bypasses IsDirectlyCompatible SFINAE for wrapper callables built inside
+  // ReturnAction, Action, DoAllAction, WithArgsAction, etc.
+  template <typename Callable>
+  static OnceAction MakeFromCallable(Callable&& callable) {
+    return OnceAction(InternalConstructTag{},
+                      std::forward<Callable>(callable));
+  }
+
  private:
+  struct InternalConstructTag {};
+
+  template <typename Callable>
+  OnceAction(InternalConstructTag, Callable&& callable)
+      : function_(StdFunctionAdaptor<typename std::decay<Callable>::type>(
+            {}, std::forward<Callable>(callable))) {}
+
   // An adaptor that wraps a callable that is compatible with our signature and
   // being invoked as an rvalue reference so that it can be used as an
   // StdFunctionAdaptor. This throws away type safety, but that's fine because
@@ -651,6 +698,16 @@ class OnceAction<Result(Args...)> final {
 
   std::function<Result(Args...)> function_;
 };
+
+namespace internal {
+
+template <typename Result, typename... Args, typename Callable>
+OnceAction<Result(Args...)> MakeOnceActionFromCallable(Callable&& callable) {
+  return OnceAction<Result(Args...)>::MakeFromCallable(
+      std::forward<Callable>(callable));
+}
+
+}  // namespace internal
 
 // When an unexpected function call is encountered, Google Mock will
 // let it return a default value if the user has specified one for its
@@ -898,13 +955,13 @@ class Action<R(Args...)> {
     struct OA {
       Action<F> action;
 
-      R operator()(Args... args) && {
+      R operator()(Args... args) {
         return action.Perform(
             std::forward_as_tuple(std::forward<Args>(args)...));
       }
     };
 
-    return OnceAction<F>(OA{*this});
+    return internal::MakeOnceActionFromCallable<R, Args...>(OA{*this});
   }
 
  private:
@@ -937,22 +994,8 @@ class Action<R(Args...)> {
 
 namespace internal {
 
-// ACTION()/ACTION_P*() define `template <typename F> operator Action<F>()`.
-// Detect them only after Action<F> is complete (see C++11 OnceAction note above).
-template <typename T, typename = void>
-struct has_action_conversion_operator : std::false_type {};
-
-using GmockDetectActionSignature = Action<int()>;
-
-template <typename T>
-struct has_action_conversion_operator<
-    T,
-    void_t<decltype(std::declval<const T&>().operator GmockDetectActionSignature())>>
-    : std::true_type {};
-
 // Types below already have explicit HasGmockActionConversion specializations
-// (see above). Exclude them here so the catch-all partial specialization does
-// not also resolve to void and become ambiguous on C++11 (e.g. ReturnAction).
+// (see above). Exclude them from ACTION()-macro detection below.
 template <typename T>
 struct IsExplicitGmockActionConversion : std::false_type {};
 template <typename R>
@@ -966,6 +1009,30 @@ template <typename A>
 struct IsExplicitGmockActionConversion<IgnoreResultAction<A>> : std::true_type {};
 template <typename Impl>
 struct IsExplicitGmockActionConversion<PolymorphicAction<Impl>> : std::true_type {};
+
+// ACTION()/ACTION_P*() define `template <typename F> operator Action<F>()`.
+// Detect them only after Action<F> is complete (see C++11 OnceAction note above).
+using GmockDetectActionSignature = Action<int()>;
+
+template <
+    typename T,
+    bool IsExplicit =
+        IsExplicitGmockActionConversion<typename std::decay<T>::type>::value>
+struct has_action_conversion_operator : std::false_type {};
+
+template <typename T>
+struct has_action_conversion_operator<T, true> : std::false_type {};
+
+template <typename T>
+struct has_action_conversion_operator<T, false> {
+  template <typename U, typename = void>
+  struct detect : std::false_type {};
+  template <typename U>
+  struct detect<U,
+                void_t<decltype(std::declval<const U&>().operator GmockDetectActionSignature())>>
+      : std::true_type {};
+  static const bool value = detect<T>::value;
+};
 
 template <typename T>
 struct HasGmockActionConversion<
@@ -1077,18 +1144,16 @@ class ReturnAction final {
                 std::is_convertible<R, U>,        //
                 std::is_move_constructible<U>>::value>::type>
   operator OnceAction<U(Args...)>() && {  // NOLINT
-    // Wrap Impl in a plain callable for OnceAction construction. On C++11,
-    // OnceAction cannot be built directly from Impl (ref-qualified operators
-    // and HasGmockActionConversion SFINAE); mirror Action::operator OnceAction.
     struct OA {
       Impl<U> impl;
 
-      U operator()(Args... args) && {
+      U operator()(Args... args) {
         return std::move(impl)(std::forward<Args>(args)...);
       }
     };
 
-    return OnceAction<U(Args...)>(OA{Impl<U>(std::move(value_))});
+    return internal::MakeOnceActionFromCallable<U, Args...>(
+        OA{Impl<U>(std::move(value_))});
   }
 
   template <typename U, typename... Args,
@@ -1621,17 +1686,21 @@ struct WithArgsAction {
                            I, std::tuple<Args...>>...)>>::value,
           int>::type = 0>
   operator OnceAction<R(Args...)>() && {  // NOLINT
-    struct OA {
-      OnceAction<InnerSignature<R, Args...>> inner_action;
+    using InnerOnceAction = OnceAction<InnerSignature<R, Args...>>;
 
-      R operator()(Args&&... args) && {
+    struct OA {
+      InnerOnceAction inner_action;
+
+      R operator()(Args&&... args) {
         return std::move(inner_action)
             .Call(std::get<I>(
                 std::forward_as_tuple(std::forward<Args>(args)...))...);
       }
     };
 
-    return OnceAction<R(Args...)>(OA{std::move(inner_action)});
+    return internal::MakeOnceActionFromCallable<R, Args...>(OA{
+        Action<InnerSignature<R, Args...>>(std::move(inner_action))
+            .operator InnerOnceAction()});
   }
 
   template <
@@ -1676,11 +1745,15 @@ class DoAllAction<FinalAction> {
   // they don't have a fixed return type.
 
   // We support conversion to OnceAction whenever the sub-action does.
-  template <typename R, typename... Args,
-            typename std::enable_if<
-                internal::is_convertible_without_hard_error<
-                    FinalAction, OnceAction<R(Args...)>>::value,
-                int>::type = 0>
+  template <
+      typename R, typename... Args,
+      typename std::enable_if<
+          conjunction<
+              negation<internal::HasGmockActionConversion<
+                  typename std::decay<FinalAction>::type>>,
+              internal::is_convertible_without_hard_error<
+                  FinalAction, OnceAction<R(Args...)>>>::value,
+          int>::type = 0>
   operator OnceAction<R(Args...)>() && {  // NOLINT
     return std::move(final_action_);
   }
@@ -1689,13 +1762,16 @@ class DoAllAction<FinalAction> {
       typename R, typename... Args,
       typename std::enable_if<
           conjunction<
+              negation<internal::HasGmockActionConversion<
+                  typename std::decay<FinalAction>::type>>,
               negation<internal::is_convertible_without_hard_error<
                   FinalAction, OnceAction<R(Args...)>>>,
               internal::is_constructible_without_hard_error<
                   FinalAction, OnceAction<R(Args...)>>>::value,
           int>::type = 0>
   operator OnceAction<R(Args...)>() && {  // NOLINT
-    return OnceAction<R(Args...)>(std::move(final_action_));
+    return internal::MakeOnceActionFromCallable<R, Args...>(
+        std::move(final_action_));
   }
 
   // We also support conversion to OnceAction whenever the sub-action supports
@@ -1703,15 +1779,18 @@ class DoAllAction<FinalAction> {
   template <
       typename R, typename... Args,
       typename std::enable_if<
-          conjunction<
-              negation<internal::is_compatible_as_once_action_source<
-                  FinalAction, OnceAction<R(Args...)>>>,
-              internal::is_compatible_as_once_action_source<
-                  FinalAction, Action<R(Args...)>>>::value,
+          disjunction<
+              internal::HasGmockActionConversion<
+                  typename std::decay<FinalAction>::type>,
+              conjunction<
+                  negation<internal::is_compatible_as_once_action_source<
+                      FinalAction, OnceAction<R(Args...)>>>,
+                  internal::is_compatible_as_once_action_source<
+                      FinalAction, Action<R(Args...)>>>>::value,
           int>::type = 0>
   operator OnceAction<R(Args...)>() && {  // NOLINT
-    return OnceAction<R(Args...)>(
-        Action<R(Args...)>(std::move(final_action_)));
+    return Action<R(Args...)>(std::move(final_action_))
+        .operator OnceAction<R(Args...)>();
   }
 
   // We support conversion to Action whenever the sub-action does.
@@ -1795,27 +1874,25 @@ class DoAllAction<InitialAction, OtherActions...>
       : Base({}, std::forward<U>(other_actions)...),
         initial_action_(std::forward<T>(initial_action)) {}
 
-  // We support conversion to OnceAction whenever both the initial action and
-  // the rest support conversion to OnceAction.
+  // We support conversion to OnceAction whenever the initial action supports
+  // direct OnceAction construction (e.g. SaveArg). The remaining sub-actions
+  // convert via their own operator OnceAction().
   template <
       typename R, typename... Args,
       typename std::enable_if<
-          conjunction<
-              internal::is_compatible_as_once_action_source<
-                  InitialAction,
-                  OnceAction<void(InitialActionArgType<Args>...)>>,
-              internal::is_compatible_as_once_action_source<
-                  Base, OnceAction<R(Args...)>>>::value,
+          internal::is_compatible_as_once_action_source<
+              InitialAction,
+              OnceAction<void(InitialActionArgType<Args>...)>>::value,
           int>::type = 0>
   operator OnceAction<R(Args...)>() && {  // NOLINT
-    // Return an action that first calls the initial action with arguments
-    // filtered through InitialActionArgType, then forwards arguments directly
-    // to the base class to deal with the remaining actions.
+    using InitialOnceAction =
+        OnceAction<void(InitialActionArgType<Args>...)>;
+
     struct OA {
-      OnceAction<void(InitialActionArgType<Args>...)> initial_action;
+      InitialOnceAction initial_action;
       OnceAction<R(Args...)> remaining_actions;
 
-      R operator()(Args... args) && {
+      R operator()(Args... args) {
         std::move(initial_action)
             .Call(static_cast<InitialActionArgType<Args>>(args)...);
 
@@ -1823,10 +1900,10 @@ class DoAllAction<InitialAction, OtherActions...>
       }
     };
 
-    return OnceAction<R(Args...)>(OA{
-        OnceAction<void(InitialActionArgType<Args>...)>(
-            std::move(initial_action_)),
-        std::move(static_cast<Base&>(*this)),
+    return internal::MakeOnceActionFromCallable<R, Args...>(OA{
+        Action<void(InitialActionArgType<Args>...)>(std::move(initial_action_))
+            .operator InitialOnceAction(),
+        std::move(static_cast<Base&>(*this)).operator OnceAction<R(Args...)>(),
     });
   }
 
