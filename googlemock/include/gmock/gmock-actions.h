@@ -950,12 +950,30 @@ struct has_action_conversion_operator<
     void_t<decltype(std::declval<const T&>().operator GmockDetectActionSignature())>>
     : std::true_type {};
 
+// Types below already have explicit HasGmockActionConversion specializations
+// (see above). Exclude them here so the catch-all partial specialization does
+// not also resolve to void and become ambiguous on C++11 (e.g. ReturnAction).
+template <typename T>
+struct IsExplicitGmockActionConversion : std::false_type {};
+template <typename R>
+struct IsExplicitGmockActionConversion<ReturnAction<R>> : std::true_type {};
+template <typename... Actions>
+struct IsExplicitGmockActionConversion<DoAllAction<Actions...>> : std::true_type {};
+template <typename InnerAction, size_t... I>
+struct IsExplicitGmockActionConversion<WithArgsAction<InnerAction, I...>>
+    : std::true_type {};
+template <typename A>
+struct IsExplicitGmockActionConversion<IgnoreResultAction<A>> : std::true_type {};
+template <typename Impl>
+struct IsExplicitGmockActionConversion<PolymorphicAction<Impl>> : std::true_type {};
+
 template <typename T>
 struct HasGmockActionConversion<
     T,
     typename std::enable_if<
         has_action_conversion_operator<typename std::decay<T>::type>::value &&
-        !IsAction<typename std::decay<T>::type>::value>::type>
+        !IsAction<typename std::decay<T>::type>::value &&
+        !IsExplicitGmockActionConversion<typename std::decay<T>::type>::value>::type>
     : std::true_type {};
 
 }  // namespace internal
