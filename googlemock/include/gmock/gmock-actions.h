@@ -477,9 +477,9 @@ struct is_compatible_as_once_action_source
     : disjunction<is_convertible_without_hard_error<From, To>,
                   is_constructible_without_hard_error<From, To>> {};
 
-// Return/DoAll/WithArgs use conversion operators; SaveArg-style actions use
+// Return/DoAll/WithArgs/ACTION() use conversion operators; SaveArg-style actions use
 // direct OnceAction construction instead.
-template <typename T>
+template <typename T, typename = void>
 struct HasGmockActionConversion : std::false_type {};
 
 template <typename R>
@@ -934,6 +934,31 @@ class Action<R(Args...)> {
   // fun_ is an empty function if and only if this is the DoDefault() action.
   ::std::function<F> fun_;
 };
+
+namespace internal {
+
+// ACTION()/ACTION_P*() define `template <typename F> operator Action<F>()`.
+// Detect them only after Action<F> is complete (see C++11 OnceAction note above).
+template <typename T, typename = void>
+struct has_action_conversion_operator : std::false_type {};
+
+using GmockDetectActionSignature = Action<int()>;
+
+template <typename T>
+struct has_action_conversion_operator<
+    T,
+    void_t<decltype(std::declval<const T&>().operator GmockDetectActionSignature())>>
+    : std::true_type {};
+
+template <typename T>
+struct HasGmockActionConversion<
+    T,
+    typename std::enable_if<
+        has_action_conversion_operator<typename std::decay<T>::type>::value &&
+        !IsAction<typename std::decay<T>::type>::value>::type>
+    : std::true_type {};
+
+}  // namespace internal
 
 // The PolymorphicAction class template makes it easy to implement a
 // polymorphic action (i.e. an action that can be used in mock
