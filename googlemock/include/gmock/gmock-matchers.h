@@ -4534,8 +4534,6 @@ internal::ResultOfMatcher<Callable, InnerMatcher> ResultOf(
 
 // String matchers.
 
-#ifndef YI_SUPPRESS_GMOCK_STD_STRING_MATCHERS
-
 // Matches a string equal to str.
 template <typename T = std::string>
 PolymorphicMatcher<internal::StrEqualityMatcher<std::string>> StrEq(
@@ -4592,8 +4590,6 @@ PolymorphicMatcher<internal::EndsWithMatcher<std::string>> EndsWith(
   return MakePolymorphicMatcher(
       internal::EndsWithMatcher<std::string>(std::string(suffix)));
 }
-
-#endif  // !YI_SUPPRESS_GMOCK_STD_STRING_MATCHERS
 
 #if GTEST_HAS_STD_WSTRING
 // Wide string matchers.
