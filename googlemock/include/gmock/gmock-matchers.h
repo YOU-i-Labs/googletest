@@ -4534,6 +4534,14 @@ internal::ResultOfMatcher<Callable, InnerMatcher> ResultOf(
 
 // String matchers.
 
+// YOU-i fork: Upstream GMock 1.16 StringLike template factories are disabled below.
+// They return std::string matchers that compete with CYIString/CYIStringView overloads
+// in YiCommonTestMacros.inl; on legacy GCC 4.x (linux-cxx11) overload resolution picks
+// the GMock matcher and compilation fails (std::string has no CYIString constructor).
+// GMock 1.10 used const std::string& overloads only, which do not conflict. Re-enable
+// the block below if upstream fixes CYIString coexistence or all platforms use C++14+.
+
+#if 0  // GMock 1.16 StringLike matchers (upstream default)
 // Matches a string equal to str.
 template <typename T = std::string>
 PolymorphicMatcher<internal::StrEqualityMatcher<std::string>> StrEq(
@@ -4589,6 +4597,50 @@ PolymorphicMatcher<internal::EndsWithMatcher<std::string>> EndsWith(
     const internal::StringLike<T>& suffix) {
   return MakePolymorphicMatcher(
       internal::EndsWithMatcher<std::string>(std::string(suffix)));
+}
+#endif  // GMock 1.16 StringLike matchers
+
+// GMock 1.10-style std::string overloads (YOU-i fork active API).
+inline PolymorphicMatcher<internal::StrEqualityMatcher<std::string>> StrEq(
+    const std::string& str) {
+  return MakePolymorphicMatcher(
+      internal::StrEqualityMatcher<std::string>(str, true, true));
+}
+
+inline PolymorphicMatcher<internal::StrEqualityMatcher<std::string>> StrNe(
+    const std::string& str) {
+  return MakePolymorphicMatcher(
+      internal::StrEqualityMatcher<std::string>(str, false, true));
+}
+
+inline PolymorphicMatcher<internal::StrEqualityMatcher<std::string>> StrCaseEq(
+    const std::string& str) {
+  return MakePolymorphicMatcher(
+      internal::StrEqualityMatcher<std::string>(str, true, false));
+}
+
+inline PolymorphicMatcher<internal::StrEqualityMatcher<std::string>> StrCaseNe(
+    const std::string& str) {
+  return MakePolymorphicMatcher(
+      internal::StrEqualityMatcher<std::string>(str, false, false));
+}
+
+inline PolymorphicMatcher<internal::HasSubstrMatcher<std::string>> HasSubstr(
+    const std::string& substring) {
+  return MakePolymorphicMatcher(
+      internal::HasSubstrMatcher<std::string>(substring));
+}
+
+inline PolymorphicMatcher<internal::StartsWithMatcher<std::string>> StartsWith(
+    const std::string& prefix) {
+  return MakePolymorphicMatcher(
+      internal::StartsWithMatcher<std::string>(prefix));
+}
+
+inline PolymorphicMatcher<internal::EndsWithMatcher<std::string>> EndsWith(
+    const std::string& suffix) {
+  return MakePolymorphicMatcher(
+      internal::EndsWithMatcher<std::string>(suffix));
 }
 
 #if GTEST_HAS_STD_WSTRING
